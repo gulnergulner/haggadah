@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+	<meta name="viewport" content="initial-scale=1.0; maximum-scale=1.0; minimum-scale=1.0; user-scalable=no;" /> 
+    <title>새가나안교회 하가다</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        h2 {
+            margin-bottom: 10px;
+        }
+        #verse {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        #counter {
+            font-size: 50px;
+            margin: 20px 0;
+        }
+        button {
+            font-size: 30px;
+            padding: 15px 30px;
+            width: 150px;
+            height: 80px;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+			touch-action: manipulation;
+        }
+        .increase {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+        }
+        .reset {
+            background-color: #f44336;
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 id="date"></h2>
+    <div id="verse">
+	<h2>📖 주제: 새계명을 지키라</h2>
+	<h2>요13:34 새 계명을 너희에게 주노니 서로 사랑하라 내가 너희를 사랑한 것 같이 너희도 서로 사랑하라.</h2>
+	<h2>35 너희가 서로 사랑하면 이로써 모든 사람이 너희가 내 제자인 줄 알리라</h2>	
+	</div>
+
+    <div id="counter">0</div>
+
+    
+    <button class="reset" onclick="resetCounter()">리셋</button>
+	<button class="increase" onclick="increaseCounter()">+1</button>
+
+    <script>
+        let count = 0;
+
+        function updateDate() {
+            const today = new Date();
+            const formattedDate = today.getFullYear() + "년 " + (today.getMonth() + 1) + "월 " + today.getDate() + "일";
+            document.getElementById("date").innerText = formattedDate;
+            return formattedDate;
+        }
+
+        function loadCounter() {
+            const savedDate = localStorage.getItem("savedDate");
+            const savedCount = localStorage.getItem("counter");
+
+            const currentDate = updateDate();
+
+            if (savedDate === currentDate && savedCount !== null) {
+                count = parseInt(savedCount, 10);
+            } else {
+                count = 0;
+                localStorage.setItem("savedDate", currentDate);
+            }
+            document.getElementById("counter").innerText = count;
+        }
+
+        function increaseCounter() {
+            count++;
+            document.getElementById("counter").innerText = count;
+            localStorage.setItem("counter", count);
+        }
+
+        function resetCounter() {
+            count = 0;
+            document.getElementById("counter").innerText = count;
+            localStorage.setItem("counter", count);
+        }
+
+        window.onload = loadCounter;
+    </script>
+
+</body>
+</html>

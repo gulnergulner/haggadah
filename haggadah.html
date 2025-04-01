@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0; maximum-scale=1.0; minimum-scale=1.0; user-scalable=no;" />
+    <title>새가나안교회 하가다</title>
+    <style>
+        /* 기본 스타일 초기화 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 전체 페이지 스타일 */
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* 날짜 제목 스타일 */
+        h2 {
+            margin: 10px 0;
+            font-size: 3vw;
+        }
+
+        /* 말씀 영역 스타일 */
+        #verse-container {
+            flex: 1; /* 화면의 남은 공간을 모두 차지 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: auto; /* 높이를 자동으로 설정 */
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* 카운터 스타일 */
+        #counter {
+            font-size: 50px;
+            margin-bottom: 20px;
+            z-index: 10;
+        }
+
+        /* 버튼 컨테이너 스타일 */
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: white;
+        }
+
+        /* 버튼 행 스타일 */
+        .button-row {
+            display: flex; /* 버튼을 가로로 정렬 */
+            justify-content: center; /* 버튼을 가운데 정렬 */
+            gap: 10px; /* 버튼 간격 줄이기 */
+            flex-wrap: nowrap; /* 버튼이 한 줄에 유지되도록 설정 */
+        }
+
+        /* 버튼 스타일 */
+        button {
+            font-size: 20px; /* 글꼴 크기 줄이기 */
+            padding: 8px 16px; /* 내부 여백 줄이기 */
+            width: 100px; /* 버튼 너비 줄이기 */
+            height: 50px; /* 버튼 높이 줄이기 */
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            touch-action: manipulation;
+        }
+
+        .increase {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .reset {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .toggle-lang {
+            background-color: #2196F3;
+            color: white;
+        }
+
+         /* 반응형 스타일 */
+        @media (max-width: 390px) {
+            .button-row {
+                gap: 5px; /* 버튼 간격 줄이기 */
+            }
+
+            button {
+                font-size: 18px; /* 글꼴 크기 더 줄이기 */
+                padding: 6px 12px; /* 내부 여백 줄이기 */
+                width: 90px; /* 버튼 너비 줄이기 */
+                height: 45px; /* 버튼 높이 줄이기 */
+            }
+        }
+
+        /* 불꽃놀이 효과 스타일 */
+        .firework {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+            animation: explode 1s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes explode {
+            0% {
+                transform: scale(1) translate(-50%, -50%);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(50) translate(-50%, -50%);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 날짜 표시 -->
+    <h2 id="date"></h2>
+
+    <!-- 말씀 영역 -->
+    <div id="verse-container">
+        <iframe id="verse-frame"></iframe>
+    </div>
+
+    <!-- 버튼 및 카운터 영역 -->
+    <div class="button-container">
+        <div id="counter">0</div>
+        <div class="button-row">
+            <button class="toggle-lang" onclick="toggleLanguage()">영문</button>
+            <button class="reset" onclick="resetCounter()">리셋</button>
+            <button class="increase" onclick="increaseCounter()">+1</button>            
+        </div>
+    </div>
+
+    <script>
+        let count = 0;
+        let isKorean = true; // 현재 언어 상태 (true: 한글, false: 영문)
+    
+        // 날짜 업데이트 함수
+        function updateDate() {
+            const today = new Date();
+            const formattedDate = today.getFullYear() + "년 " + (today.getMonth() + 1) + "월 " + today.getDate() + "일";
+            document.getElementById("date").innerText = formattedDate;
+            return formattedDate;
+        }
+    
+        // 말씀 로드 함수
+        function loadVerse() {
+            const timestamp = new Date().getTime();
+            const language = isKorean ? "verse_ko.html" : "verse_en.html"; // 언어에 따라 파일 선택
+            document.getElementById("verse-frame").src = `${language}?t=${timestamp}`;
+        }
+    
+        // 카운터 로드 함수
+        function loadCounter() {
+            const savedDate = localStorage.getItem("savedDate");
+            const savedCount = localStorage.getItem("counter");
+    
+            const currentDate = updateDate();
+    
+            if (savedDate === currentDate && savedCount !== null) {
+                count = parseInt(savedCount, 10);
+            } else {
+                count = 0;
+                localStorage.setItem("savedDate", currentDate);
+            }
+            document.getElementById("counter").innerText = count;
+        }
+    
+        // 카운터 증가 함수
+        function increaseCounter() {
+            count++;
+            document.getElementById("counter").innerText = count;
+            localStorage.setItem("counter", count);
+
+            // 10의 배수일 때 불꽃놀이 효과 실행
+            if (count % 10 === 0) {
+                triggerFirework();
+            }
+        }
+
+        // 불꽃놀이 효과 함수
+        function triggerFirework() {
+            const firework = document.createElement("div");
+            firework.classList.add("firework");
+
+            // 랜덤 색상 생성
+            const randomColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            firework.style.backgroundColor = randomColor;
+
+            document.body.appendChild(firework);
+
+            // 1초 후 불꽃놀이 요소 제거
+            setTimeout(() => {
+                firework.remove();
+            }, 1000);
+        }
+    
+        // 카운터 리셋 함수
+        function resetCounter() {
+            count = 0;
+            document.getElementById("counter").innerText = count;
+            localStorage.setItem("counter", count);
+        }
+    
+        // 언어 전환 함수
+        function toggleLanguage() {
+            const toggleLangButton = document.querySelector(".toggle-lang");
+            const resetButton = document.querySelector(".reset");
+    
+            if (isKorean) {
+                toggleLangButton.innerText = "Korean";
+                resetButton.innerText = "Reset";
+                isKorean = false;
+            } else {
+                toggleLangButton.innerText = "영문";
+                resetButton.innerText = "리셋";
+                isKorean = true;
+            }
+    
+            // 말씀 파일 다시 로드
+            loadVerse();
+        }
+    
+        // 페이지 로드 시 초기화
+        window.onload = function() {
+            loadVerse();
+            loadCounter();
+        };
+    </script>
+</body>
+</html>
