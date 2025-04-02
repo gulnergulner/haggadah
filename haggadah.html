@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="initial-scale=1.0; maximum-scale=1.0; minimum-scale=1.0; user-scalable=no;"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
     />
     <title>새가나안교회 하가다</title>
     <style>
@@ -67,19 +67,20 @@
 
       /* 버튼 행 스타일 */
       .button-row {
-        display: flex; /* 버튼을 가로로 정렬 */
-        justify-content: center; /* 버튼을 가운데 정렬 */
-        gap: 10px; /* 버튼 간격 줄이기 */
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem; /* 버튼 간격 */
         flex-wrap: nowrap; /* 버튼이 한 줄에 유지되도록 설정 */
-        margin-bottom: 10px; /* 버튼 행 간격 추가 */
+        margin-bottom: 1rem;
+        width: 100%; /* 버튼 행이 가로폭을 꽉 채우도록 설정 */
       }
 
       /* 공통 버튼 스타일 */
       button {
-        font-size: 20px; /* 글꼴 크기 */
-        padding: 10px 20px; /* 내부 여백 */
-        width: 120px; /* 버튼 너비 */
-        height: 50px; /* 버튼 높이 */
+        font-size: 1.25rem; /* 글꼴 크기를 rem 단위로 설정 */
+        padding: 0.5rem 1rem; /* 내부 여백을 rem 단위로 설정 */
+        flex: 1; /* 버튼이 동일한 너비를 가지도록 설정 */
+        height: auto; /* 버튼 높이를 자동으로 조정 */
         cursor: pointer;
         border: none;
         border-radius: 25px; /* 완전히 둥근 모서리 */
@@ -92,6 +93,18 @@
         position: relative; /* 광택 효과를 위한 상대 위치 */
         overflow: hidden; /* 광택 효과가 버튼 영역을 벗어나지 않도록 설정 */
         touch-action: manipulation;
+      }
+
+      /* 반응형 스타일 */
+      @media (max-width: 390px) {
+        button {
+          font-size: 1rem; /* 작은 화면에서는 글꼴 크기 줄이기 */
+          padding: 0.4rem 0.8rem;
+        }
+
+        .button-row {
+          gap: 0.3rem; /* 버튼 간격 줄이기 */
+        }
       }
 
       /* 영문 버튼 (파란색) */
@@ -135,20 +148,6 @@
         transform: translateY(2px); /* 클릭 시 눌리는 효과 */
         box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.2),
           0 2px 4px rgba(0, 0, 0, 0.3); /* 클릭 시 그림자 줄이기 */
-      }
-
-      /* 반응형 스타일 */
-      @media (max-width: 390px) {
-        .button-row {
-          gap: 5px; /* 버튼 간격 줄이기 */
-        }
-
-        button {
-          font-size: 18px; /* 글꼴 크기 더 줄이기 */
-          padding: 6px 12px; /* 내부 여백 줄이기 */
-          width: 90px; /* 버튼 너비 줄이기 */
-          height: 45px; /* 버튼 높이 줄이기 */
-        }
       }
 
       /* 불꽃놀이 효과 스타일 */
