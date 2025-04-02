@@ -71,32 +71,50 @@
             margin-bottom: 10px; /* 버튼 행 간격 추가 */
         }
 
-        /* 버튼 스타일 */
-        button {
-            font-size: 20px; /* 글꼴 크기 줄이기 */
-            padding: 8px 16px; /* 내부 여백 줄이기 */
-            width: 100px; /* 버튼 너비 줄이기 */
-            height: 50px; /* 버튼 높이 줄이기 */
-            cursor: pointer;
-            border: none;
-            border-radius: 10px;
-            touch-action: manipulation;
-        }
+     /* 공통 버튼 스타일 */
+     button {
+        font-size: 20px; /* 글꼴 크기 */
+        padding: 10px 20px; /* 내부 여백 */
+        width: 120px; /* 버튼 너비 */
+        height: 50px; /* 버튼 높이 */
+        cursor: pointer;
+        border: none;
+        border-radius: 25px; /* 완전히 둥근 모서리 */
+        box-shadow: inset 0 -3px 5px rgba(0, 0, 0, 0.2), /* 내부 그림자 */
+                    0 4px 6px rgba(0, 0, 0, 0.3); /* 외부 그림자 */
+        color: white; /* 텍스트 색상 */
+        font-weight: bold;
+        text-shadow: 0 1px rgba(0, 0, 0, 0.2); /* 텍스트 그림자 효과 */
+        transition: all 0.2s ease; /* 애니메이션 효과 */
+        position: relative; /* 광택 효과를 위한 상대 위치 */
+        overflow: hidden; /* 광택 효과가 버튼 영역을 벗어나지 않도록 설정 */
+    }
 
-        .increase {
-            background-color: #4CAF50;
-            color: white;
-        }
+    /* 영문 버튼 (파란색) */
+    .toggle-lang {
+        background: linear-gradient(to bottom, #2196F3, #1E88E5); /* 파란색 그라데이션 */
+    }
 
-        .reset {
-            background-color: #f44336;
-            color: white;
-        }
+    /* 리셋 버튼 (빨간색) */
+    .reset {
+        background: linear-gradient(to bottom, #f44336, #e53935); /* 빨간색 그라데이션 */
+    }
 
-        .toggle-lang {
-            background-color: #2196F3;
-            color: white;
-        }
+    /* +1 버튼 (초록색) */
+    .increase {
+        background: linear-gradient(to bottom, #4CAF50, #45A049); /* 초록색 그라데이션 */
+    }
+
+    /* 가리기 버튼 (회색) */
+    .hide-verse {
+        background: linear-gradient(to bottom, #9E9E9E, #757575); /* 회색 그라데이션 */
+    }
+
+    /* 버튼 클릭 효과 */
+    button:active {
+        transform: translateY(2px); /* 클릭 시 눌리는 효과 */
+        box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.3); /* 클릭 시 그림자 줄이기 */
+    }
 
          /* 반응형 스타일 */
         @media (max-width: 390px) {
