@@ -147,6 +147,23 @@
             animation: floatUp 5s ease-in forwards;
             z-index: 1000;
         }
+		
+		#date-container {
+			display: flex;
+			justify-content: center; /* 가로 중앙 정렬 */
+			align-items: center; /* 세로 중앙 정렬 */
+			text-align: center; /* 내부 텍스트도 중앙 정렬 */
+			gap: 10px; /* 날짜와 칭호 사이 간격 */
+			width: 100%; /* 전체 너비 사용 */
+		}
+
+		#title-badge {
+			font-size: 1em; /* 날짜와 동일한 크기 */
+			font-weight: bold;
+			color: darkblue;
+			white-space: nowrap; /* 칭호가 줄 바꿈되지 않도록 설정 */
+		}
+
 
         @keyframes floatUp {
             0% {
@@ -184,9 +201,11 @@
     </style>
 </head>
 <body>
-    <!-- 날짜 표시 -->
-    <h2 id="date"></h2>
-
+	<div id="date-container">
+		<h2 id="date"></h2>
+		<span id="title-badge"></span>
+	</div>
+	
     <!-- 말씀 영역 -->
     <div id="verse-container">
         <iframe id="verse-frame"></iframe>
@@ -207,9 +226,26 @@
     </div>
 
     <script>
+	
+		const titles = [
+			"🌱 새싹",  // 1~19번
+			"⭐ 말씀 지킴이", // 20~39번
+			"🔥 신앙의 불꽃", // 40~59번
+			"💎 믿음의 보석", // 60~79번
+			"🌟 빛의 증인", // 80~99번
+			"🏆 말씀의 챔피언" // 100번 이상
+		];	
+		
         let count = 0;
         let isKorean = true; // 현재 언어 상태 (true: 한글, false: 영문)
         let isVerseHidden = false;
+		
+		// 칭호 업데이트 함수
+		function updateTitleBadge(count) {
+			let titleIndex = Math.floor(count / 20);
+			if (titleIndex >= titles.length) titleIndex = titles.length - 1;
+			document.getElementById("title-badge").innerText = titles[titleIndex];
+		}
 
         // 말씀 가리기/보이기 함수
         function toggleVerse() {
@@ -283,6 +319,8 @@
                 localStorage.setItem("savedDate", currentDate);
             }
             document.getElementById("counter").innerText = count;
+			
+			updateTitleBadge(count);
         }
     
         function flashBackground() {
@@ -320,7 +358,10 @@
             count++;
             document.getElementById("counter").innerText = count;
             localStorage.setItem("counter", count);
-
+			
+			// 20번 단위로 칭호 업데이트
+			updateTitleBadge(count);
+			
             // 10의 배수일 때 불꽃놀이 효과 실행
             if (count % 10 === 0) {
                 triggerFirework();
@@ -356,6 +397,7 @@
             count = 0;
             document.getElementById("counter").innerText = count;
             localStorage.setItem("counter", count);
+			updateTitleBadge(count);
         }
     
         // 언어 전환 함수
@@ -385,6 +427,7 @@
             // 말씀 파일 다시 로드
             loadVerse();
         }
+		
     
         // 페이지 로드 시 초기화
         window.onload = function() {
