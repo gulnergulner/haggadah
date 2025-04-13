@@ -439,6 +439,8 @@
         document.getElementById("counter").innerText = count;
         localStorage.setItem("counter", count);
         updateTitleBadge(count);
+
+        location.reload();
       }
 
       // 언어 전환 함수
