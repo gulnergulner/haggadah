@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>클릭 시 불꽃 효과</title>
+    <style>
+      body {
+        margin: 0;
+        height: 100vh;
+        overflow: hidden;
+        background-color: #000;
+        position: relative;
+      }
+      /* 불꽃 효과 요소 */
+      .sparkle {
+        position: absolute;
+        pointer-events: none;
+        width: 20px;
+        height: 20px;
+        background: radial-gradient(
+          circle,
+          rgba(255, 215, 0, 1) 0%,
+          rgba(255, 69, 0, 0.8) 50%,
+          rgba(255, 0, 0, 0) 70%
+        );
+        border-radius: 50%;
+        transform: scale(0.5);
+        animation: sparkle 800ms ease-out forwards;
+      }
+      /* 불꽃 애니메이션 */
+      @keyframes sparkle {
+        0% {
+          opacity: 1;
+          transform: scale(0.5) rotate(0deg);
+        }
+        100% {
+          opacity: 0;
+          transform: scale(1.5) rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      document.addEventListener("click", function (e) {
+        // 클릭 위치에 불꽃 요소 생성
+        const sparkle = document.createElement("div");
+        sparkle.classList.add("sparkle");
+        // 클릭 위치 중심에 위치시키기 위해 offset 조정
+        sparkle.style.left = e.pageX - 10 + "px";
+        sparkle.style.top = e.pageY - 10 + "px";
+        document.body.appendChild(sparkle);
+        // 애니메이션 종료 후 요소 제거
+        sparkle.addEventListener("animationend", function () {
+          sparkle.remove();
+        });
+      });
+    </script>
+  </body>
+</html>
