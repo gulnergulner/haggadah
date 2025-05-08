@@ -257,7 +257,20 @@
         <!--<button class="share-kakao" onclick="shareToKakao()">공유</button>    -->
         <button class="reset" onclick="resetCounter()">리셋</button>
         <button class="toggle-lang" onclick="toggleLanguage()">영문</button>
-        <button class="hide-verse" onclick="toggleVerse()">가리기</button>
+        <button
+          class="hide-verse"
+          id="hide1"
+          onclick="toggleVersePart('part1')"
+        >
+          [1]HIDE
+        </button>
+        <button
+          class="hide-verse"
+          id="hide2"
+          onclick="toggleVersePart('part2')"
+        >
+          [2]HIDE
+        </button>
       </div>
       <div class="button-row">
         <button class="increase" onclick="increaseCounter()">+1</button>
@@ -276,7 +289,6 @@
 
       let count = 0;
       let isKorean = true; // 현재 언어 상태 (true: 한글, false: 영문)
-      let isVerseHidden = false;
 
       // 칭호 업데이트 함수
       function updateTitleBadge(count) {
@@ -285,21 +297,26 @@
         document.getElementById("title-badge").innerText = titles[titleIndex];
       }
 
-      // 말씀 가리기/보이기 함수
-      function toggleVerse() {
-        const verseContainer = document.getElementById("verse-container");
-        const hideVerseButton = document.querySelector(".hide-verse");
+      function toggleVersePart(verse) {
+        const iframe = document.getElementById("verse-frame");
+        const iframeDocument =
+          iframe.contentDocument || iframe.contentWindow.document;
+        const part = iframeDocument.getElementById(verse);
 
-        if (isVerseHidden) {
-          verseContainer.style.display = "flex";
-          if (isKorean) hideVerseButton.innerText = "가리기";
-          else hideVerseButton.innerText = "Hide";
-          isVerseHidden = false;
+        if (part.style.visibility === "hidden") {
+          part.style.visibility = "visible";
         } else {
-          verseContainer.style.display = "none";
-          if (isKorean) hideVerseButton.innerText = "보이기";
-          else hideVerseButton.innerText = "Show";
-          isVerseHidden = true;
+          part.style.visibility = "hidden";
+        }
+
+        if (verse === "part1") {
+          const hideButton1 = document.getElementById("hide1");
+          hideButton1.innerText =
+            hideButton1.innerText === "[1]HIDE" ? "[1]SHOW" : "[1]HIDE";
+        } else if (verse === "part2") {
+          const hideButton2 = document.getElementById("hide2");
+          hideButton2.innerText =
+            hideButton2.innerText === "[2]HIDE" ? "[2]SHOW" : "[2]HIDE";
         }
       }
 
@@ -453,14 +470,10 @@
         if (isKorean) {
           toggleLangButton.innerText = "Korean";
           resetButton.innerText = "Reset";
-          if (isVerseHidden) hideVerseButton.innerText = "Show";
-          else hideVerseButton.innerText = "Hide";
           isKorean = false;
         } else {
           toggleLangButton.innerText = "영문";
           resetButton.innerText = "리셋";
-          if (isVerseHidden) hideVerseButton.innerText = "보이기";
-          else hideVerseButton.innerText = "가리기";
           isKorean = true;
         }
 
