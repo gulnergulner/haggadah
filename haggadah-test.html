@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
@@ -84,7 +84,8 @@
         cursor: pointer;
         border: none;
         border-radius: 25px; /* 완전히 둥근 모서리 */
-        box-shadow: inset 0 -3px 5px rgba(0, 0, 0, 0.2),
+        box-shadow:
+          inset 0 -3px 5px rgba(0, 0, 0, 0.2),
           /* 내부 그림자 */ 0 4px 6px rgba(0, 0, 0, 0.3); /* 외부 그림자 */
         color: white; /* 텍스트 색상 */
         font-weight: bold;
@@ -146,7 +147,8 @@
       /* 버튼 클릭 효과 */
       button:active {
         transform: translateY(2px); /* 클릭 시 눌리는 효과 */
-        box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.2),
+        box-shadow:
+          inset 0 3px 5px rgba(0, 0, 0, 0.2),
           0 2px 4px rgba(0, 0, 0, 0.3); /* 클릭 시 그림자 줄이기 */
       }
 
@@ -275,18 +277,12 @@
       let count = 0;
       let isKorean = true; // 현재 언어 상태 (true: 한글, false: 영문)
       let isVerseHidden = false;
-      let level = 1; // 초기 레벨
-      let totalCount = 0; // 누적 카운트
 
       // 칭호 업데이트 함수
       function updateTitleBadge(count) {
         let titleIndex = Math.floor(count / 20);
         if (titleIndex >= titles.length) titleIndex = titles.length - 1;
-
-        // 칭호와 레벨 표시
-        document.getElementById(
-          "title-badge"
-        ).innerText = `${titles[titleIndex]} (레벨 ${level})`;
+        document.getElementById("title-badge").innerText = titles[titleIndex];
       }
 
       // 말씀 가리기/보이기 함수
@@ -346,17 +342,14 @@
       function loadVerse() {
         const timestamp = new Date().getTime();
         const language = isKorean ? "verse_ko.html" : "verse_en.html"; // 언어에 따라 파일 선택
-        document.getElementById(
-          "verse-frame"
-        ).src = `${language}?t=${timestamp}`;
+        document.getElementById("verse-frame").src =
+          `${language}?t=${timestamp}`;
       }
 
       // 카운터 로드 함수
       function loadCounter() {
         const savedDate = localStorage.getItem("savedDate");
         const savedCount = localStorage.getItem("counter");
-        const savedTotalCount = localStorage.getItem("totalCount");
-        const savedLevel = localStorage.getItem("level");
 
         const currentDate = updateDate();
 
@@ -366,11 +359,8 @@
           count = 0;
           localStorage.setItem("savedDate", currentDate);
         }
-
-        totalCount = savedTotalCount ? parseInt(savedTotalCount, 10) : 0;
-        level = savedLevel ? parseInt(savedLevel, 10) : 1;
-
         document.getElementById("counter").innerText = count;
+
         updateTitleBadge(count);
       }
 
@@ -408,21 +398,11 @@
       // 카운터 증가 함수
       function increaseCounter() {
         count++;
-        totalCount++;
         document.getElementById("counter").innerText = count;
         localStorage.setItem("counter", count);
-        localStorage.setItem("totalCount", totalCount);
 
         // 20번 단위로 칭호 업데이트
         updateTitleBadge(count);
-
-        // 레벨업 조건: 누적 카운트가 50의 배수일 때
-        if (totalCount % 50 === 0) {
-          level++;
-          localStorage.setItem("level", level); // 레벨 저장
-          updateTitleBadge(count); // 레벨업 후 칭호와 레벨 업데이트
-          flashBackground(); // 레벨업 효과
-        }
 
         // 10의 배수일 때 불꽃놀이 효과 실행
         if (count % 10 === 0) {
@@ -460,6 +440,8 @@
         document.getElementById("counter").innerText = count;
         localStorage.setItem("counter", count);
         updateTitleBadge(count);
+
+        location.reload();
       }
 
       // 언어 전환 함수

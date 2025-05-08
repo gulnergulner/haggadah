@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
@@ -7,9 +7,15 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
     />
     <title>새가나안교회 하가다</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@200..900&display=swap"
+      rel="stylesheet"
+    />
     <style>
       body {
-        font-family: "Arial", sans-serif;
+        font-family: "Noto Serif KR", serif;
         text-align: center;
         display: flex;
         flex-direction: column;
@@ -17,11 +23,12 @@
         align-items: center;
         height: 100%;
         margin: 0;
-        font-size: calc(3vw + 2vh); /* 화면 크기에 따라 글자 크기 조정 */
+        font-size: calc(3vw + 1.4vh); /* 화면 크기에 따라 글자 크기 조정 */
         font-weight: bold;
         line-height: 1.5;
         padding: 20px;
-        background-color: #f9f9f9; /* 배경색 추가 */
+        word-wrap: break-word; /* 긴 단어가 있으면 자동 줄바꿈 */
+        max-width: 90%; /* 너무 넓어지지 않도록 조정 */
       }
 
       /* 주제 스타일 */
@@ -29,16 +36,13 @@
         font-size: calc(2vw + 1vh); /* 주제는 더 작은 크기로 조정 */
         white-space: nowrap; /* 한 줄에 표시되도록 설정 */
       }
-
-      img {
-        max-width: 90%;
-        height: auto;
-      }
-
     </style>
   </head>
   <body>
-    <strong class="title">📖John14:12-13</strong>
-    <img src="verse/250413-en.png" alt="성경 말씀 이미지" />
+    <strong class="title">📖Timothy 1:10-11</strong><br />
+    but it has now been revealed through the appearing of our Savior, Christ
+    Jesus, who has destroyed death and has brought life and immortality to light
+    through the gospel. And of this gospel I was appointed a herald and an
+    apostle and a teacher.
   </body>
 </html>

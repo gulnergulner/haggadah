@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
@@ -84,7 +84,8 @@
         cursor: pointer;
         border: none;
         border-radius: 25px; /* 완전히 둥근 모서리 */
-        box-shadow: inset 0 -3px 5px rgba(0, 0, 0, 0.2),
+        box-shadow:
+          inset 0 -3px 5px rgba(0, 0, 0, 0.2),
           /* 내부 그림자 */ 0 4px 6px rgba(0, 0, 0, 0.3); /* 외부 그림자 */
         color: white; /* 텍스트 색상 */
         font-weight: bold;
@@ -146,7 +147,8 @@
       /* 버튼 클릭 효과 */
       button:active {
         transform: translateY(2px); /* 클릭 시 눌리는 효과 */
-        box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.2),
+        box-shadow:
+          inset 0 3px 5px rgba(0, 0, 0, 0.2),
           0 2px 4px rgba(0, 0, 0, 0.3); /* 클릭 시 그림자 줄이기 */
       }
 
@@ -340,9 +342,8 @@
       function loadVerse() {
         const timestamp = new Date().getTime();
         const language = isKorean ? "verse_ko.html" : "verse_en.html"; // 언어에 따라 파일 선택
-        document.getElementById(
-          "verse-frame"
-        ).src = `${language}?t=${timestamp}`;
+        document.getElementById("verse-frame").src =
+          `${language}?t=${timestamp}`;
       }
 
       // 카운터 로드 함수
