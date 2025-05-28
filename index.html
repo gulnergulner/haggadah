@@ -94,6 +94,7 @@
         position: relative; /* 광택 효과를 위한 상대 위치 */
         overflow: hidden; /* 광택 효과가 버튼 영역을 벗어나지 않도록 설정 */
         touch-action: manipulation;
+        text-overflow: ellipsis;
       }
 
       /* 반응형 스타일 */
@@ -262,14 +263,14 @@
           id="hide1"
           onclick="toggleVersePart('part1')"
         >
-          [1]HIDE
+          HIDE1
         </button>
         <button
           class="hide-verse"
           id="hide2"
           onclick="toggleVersePart('part2')"
         >
-          [2]HIDE
+          HIDE2
         </button>
       </div>
       <div class="button-row">
@@ -312,11 +313,11 @@
         if (verse === "part1") {
           const hideButton1 = document.getElementById("hide1");
           hideButton1.innerText =
-            hideButton1.innerText === "[1]HIDE" ? "[1]SHOW" : "[1]HIDE";
+            hideButton1.innerText === "HIDE1" ? "SHOW1" : "HIDE1";
         } else if (verse === "part2") {
           const hideButton2 = document.getElementById("hide2");
           hideButton2.innerText =
-            hideButton2.innerText === "[2]HIDE" ? "[2]SHOW" : "[2]HIDE";
+            hideButton2.innerText === "HIDE2" ? "SHOW2" : "HIDE2";
         }
       }
 
