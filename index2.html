@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+    />
+    <title>새가나안교회 하가다</title>
+    <style>
+      /* 기본 스타일 초기화 */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      /* 전체 페이지 스타일 */
+      body {
+        font-family: "Arial", sans-serif;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+
+      /* 날짜 제목 스타일 */
+      h2 {
+        margin: 10px 0;
+        font-size: 3vw;
+      }
+
+      /* 말씀 영역 스타일 */
+      #verse-container {
+        flex: 1; /* 화면의 남은 공간을 모두 차지 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: auto; /* 높이를 자동으로 설정 */
+      }
+
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+
+      /* 카운터 스타일 */
+      #counter {
+        font-size: 50px;
+        margin-bottom: 20px;
+        z-index: 10;
+      }
+
+      /* 버튼 컨테이너 스타일 */
+      .button-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background: white;
+      }
+
+      /* 버튼 행 스타일 */
+      .button-row {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem; /* 버튼 간격 */
+        flex-wrap: nowrap; /* 버튼이 한 줄에 유지되도록 설정 */
+        margin-bottom: 1rem;
+        width: 100%; /* 버튼 행이 가로폭을 꽉 채우도록 설정 */
+      }
+
+      /* 공통 버튼 스타일 */
+      button {
+        font-size: 1.25rem; /* 글꼴 크기를 rem 단위로 설정 */
+        padding: 0.5rem 1rem; /* 내부 여백을 rem 단위로 설정 */
+        flex: 1; /* 버튼이 동일한 너비를 가지도록 설정 */
+        height: auto; /* 버튼 높이를 자동으로 조정 */
+        cursor: pointer;
+        border: none;
+        border-radius: 25px; /* 완전히 둥근 모서리 */
+        box-shadow:
+          inset 0 -3px 5px rgba(0, 0, 0, 0.2),
+          /* 내부 그림자 */ 0 4px 6px rgba(0, 0, 0, 0.3); /* 외부 그림자 */
+        color: white; /* 텍스트 색상 */
+        font-weight: bold;
+        text-shadow: 0 1px rgba(0, 0, 0, 0.2); /* 텍스트 그림자 효과 */
+        transition: all 0.2s ease; /* 애니메이션 효과 */
+        position: relative; /* 광택 효과를 위한 상대 위치 */
+        overflow: hidden; /* 광택 효과가 버튼 영역을 벗어나지 않도록 설정 */
+        touch-action: manipulation;
+        text-overflow: ellipsis;
+      }
+
+      /* 반응형 스타일 */
+      @media (max-width: 390px) {
+        button {
+          font-size: 1rem; /* 작은 화면에서는 글꼴 크기 줄이기 */
+          padding: 0.4rem 0.8rem;
+        }
+
+        .button-row {
+          gap: 0.3rem; /* 버튼 간격 줄이기 */
+        }
+      }
+
+      /* 영문 버튼 (파란색) */
+      .toggle-lang {
+        background: linear-gradient(
+          to bottom,
+          #2196f3,
+          #1e88e5
+        ); /* 파란색 그라데이션 */
+      }
+
+      /* 리셋 버튼 (빨간색) */
+      .reset {
+        background: linear-gradient(
+          to bottom,
+          #f44336,
+          #e53935
+        ); /* 빨간색 그라데이션 */
+      }
+
+      /* +1 버튼 (초록색) */
+      .increase {
+        background: linear-gradient(
+          to bottom,
+          #4caf50,
+          #45a049
+        ); /* 초록색 그라데이션 */
+      }
+
+      /* 가리기 버튼 (회색) */
+      .hide-verse {
+        background: linear-gradient(
+          to bottom,
+          #9e9e9e,
+          #757575
+        ); /* 회색 그라데이션 */
+      }
+
+      /* 버튼 클릭 효과 */
+      button:active {
+        transform: translateY(2px); /* 클릭 시 눌리는 효과 */
+        box-shadow:
+          inset 0 3px 5px rgba(0, 0, 0, 0.2),
+          0 2px 4px rgba(0, 0, 0, 0.3); /* 클릭 시 그림자 줄이기 */
+      }
+
+      /* 불꽃놀이 효과 스타일 */
+      .firework {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 10px;
+        height: 10px;
+        background-color: red;
+        border-radius: 50%;
+        animation: explode 1s ease-out forwards;
+        pointer-events: none;
+      }
+
+      @keyframes explode {
+        0% {
+          transform: scale(1) translate(-50%, -50%);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(50) translate(-50%, -50%);
+          opacity: 0;
+        }
+      }
+
+      /* 풍선 스타일 */
+      .balloon {
+        position: fixed;
+        bottom: -100px;
+        width: 50px;
+        height: 70px;
+        background-color: red;
+        border-radius: 50%;
+        animation: floatUp 5s ease-in forwards;
+        z-index: 1000;
+      }
+
+      #date-container {
+        display: flex;
+        justify-content: center; /* 가로 중앙 정렬 */
+        align-items: center; /* 세로 중앙 정렬 */
+        text-align: center; /* 내부 텍스트도 중앙 정렬 */
+        gap: 10px; /* 날짜와 칭호 사이 간격 */
+        width: 100%; /* 전체 너비 사용 */
+      }
+
+      #title-badge {
+        font-size: 1em; /* 날짜와 동일한 크기 */
+        font-weight: bold;
+        color: darkblue;
+        white-space: nowrap; /* 칭호가 줄 바꿈되지 않도록 설정 */
+      }
+
+      @keyframes floatUp {
+        0% {
+          transform: translateX(0) translateY(0);
+          opacity: 1;
+        }
+        100% {
+          transform: translateX(calc(100vw - 50px)) translateY(-100vh);
+          opacity: 0;
+        }
+      }
+
+      /* 배경색 전환 애니메이션 */
+      @keyframes backgroundFlash {
+        0% {
+          background-color: white;
+        }
+        25% {
+          background-color: lightblue;
+        }
+        50% {
+          background-color: lightgreen;
+        }
+        75% {
+          background-color: lightpink;
+        }
+        100% {
+          background-color: white;
+        }
+      }
+
+      .background-flash {
+        animation: backgroundFlash 3s ease-in-out;
+      }
+
+      .font-size-btn {
+        font-size: 1.7rem;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        border-radius: 6px;
+        border: 1px solid #bbb;
+        background: #f3f3f3;
+        color: #333;
+        font-weight: bold;
+        cursor: pointer;
+        vertical-align: middle;
+        box-shadow: none;
+        transition: background 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        aspect-ratio: 1 / 1;
+        min-width: 2rem;
+        min-height: 2rem;
+        max-width: 2rem;
+        max-height: 2rem;
+        margin: 0; /* 버튼 사이 간격 제거 */
+      }
+      .font-size-btn:active {
+        background: #e0e0e0;
+      }
+
+      .verse-select-btn {
+  font-size: 1.1rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  margin: 2px 2px;
+  border-radius: 6px;
+  border: 1.5px solid #bbb;
+  background: #f3f3f3;
+  color: #333;
+  font-weight: bold;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border 0.2s, color 0.2s;
+  box-shadow: none;
+  outline: none;
+}
+.verse-select-btn.selected {
+  background: #2196f3;
+  color: #fff;
+  border: 2px solid #1565c0;
+}
+.verse-select-btn:active {
+  background: #e0e0e0;
+}
+    </style>
+  </head>
+  <body>
+    <div id="verse-buttons" style="margin: 10px 0;">
+  <button class="verse-select-btn" onclick="selectVerseBtn(1)">1</button>
+  <button class="verse-select-btn" onclick="selectVerseBtn(2)">2</button>
+  <button class="verse-select-btn" onclick="selectVerseBtn(3)">3</button>
+  <button class="verse-select-btn" onclick="selectVerseBtn(4)">4</button>
+  <button class="verse-select-btn" onclick="selectVerseBtn(5)">5</button><br/>
+  <button class="verse-select-btn" onclick="selectVerseBtn(6)">6</button>
+  <button class="verse-select-btn" onclick="selectVerseBtn(7)">7</button>
+  <button class="verse-select-btn" onclick="selectVerseBtn(8)">8</button>
+  <button class="verse-select-btn" onclick="selectVerseBtn(9)">9</button>
+  <button class="verse-select-btn" onclick="selectVerseBtn(10)">10</button>
+  <button class="verse-select-btn" onclick="selectVerseBtn(11)">11</button>
+</div>
+    <div id="date-container" style="display: flex; align-items: center; width: 100%; position: relative;">
+      <div style="margin: 0 auto; display: flex; flex-direction: column; align-items: center;">
+        <h2 id="date" style="margin-bottom: 2px;"></h2>
+        <span id="title-badge"></span>
+      </div>
+      <div style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: flex;">
+        <button id="font-decrease" class="font-size-btn" style="margin-left:0; margin-right:0;">-</button>
+        <button id="font-increase" class="font-size-btn" style="margin-left:0; margin-right:8px;">+</button>
+      </div>
+    </div>
+    <div id="verse-buttons" style="margin: 10px 0;">
+  <!-- 버튼이 JS로 생성됩니다 -->
+</div>
+
+
+    <!-- 말씀 영역 -->
+    <div id="verse-container">
+      <iframe id="verse-frame"></iframe>
+    </div>
+
+    <!-- 버튼 및 카운터 영역 -->
+    <div class="button-container">
+      <div id="counter">0</div>
+      <div class="button-row">
+        <!--<button class="share-kakao" onclick="shareToKakao()">공유</button>    -->
+        <button class="reset" onclick="resetCounter()">리셋</button>
+        <button
+          class="hide-verse"
+          id="hide1"
+          onclick="toggleVersePart('part1')"
+        >
+          HIDE1
+        </button>
+        <button
+          class="hide-verse"
+          id="hide2"
+          onclick="toggleVersePart('part2')"
+        >
+          HIDE2
+        </button>
+      </div>
+      <div class="button-row">
+        <button class="increase" onclick="increaseCounter()">+1</button>
+      </div>
+    </div>
+
+    <script>
+      const titles = [
+        "🌱 새싹", // 1~19번
+        "⭐ 말씀 지킴이", // 20~39번
+        "🔥 신앙의 불꽃", // 40~59번
+        "💎 믿음의 보석", // 60~79번
+        "🌟 빛의 증인", // 80~99번
+        "🏆 말씀의 챔피언", // 100번 이상
+      ];
+
+      let count = 0;
+      let isKorean = true; // 현재 언어 상태 (true: 한글, false: 영문)
+
+
+      // 기본 폰트 크기(px)
+      const DEFAULT_FONT_SIZE = 20;
+      let verseFontSize = parseInt(localStorage.getItem("verseFontSize")) || DEFAULT_FONT_SIZE;
+
+      let currentVerseNum = parseInt(localStorage.getItem("currentVerseNum")) || 1;
+
+      // verse1~11.html 파일을 로드하고 버튼 하이라이트
+function selectVerseBtn(num) {
+  currentVerseNum = num;
+  localStorage.setItem("currentVerseNum", num); // 선택값 저장
+  loadVerseFile(num);
+
+  // 버튼 하이라이트 처리
+  const btns = document.querySelectorAll('.verse-select-btn');
+  btns.forEach((btn, idx) => {
+    if (idx === num - 1) btn.classList.add('selected');
+    else btn.classList.remove('selected');
+  });
+}
+
+      // 폰트 크기 적용 함수
+      function setVerseFontSize(size) {
+        const iframe = document.getElementById("verse-frame");
+        // iframe이 로드된 후에만 접근
+        if (iframe && iframe.contentWindow && iframe.contentDocument) {
+          const doc = iframe.contentDocument || iframe.contentWindow.document;
+          if (doc.body) {
+            doc.body.style.fontSize = size + "px";
+          }
+        }
+      }
+
+      // 폰트 크기 조정 버튼 이벤트
+      document.getElementById("font-increase").onclick = function () {
+        verseFontSize += 4;
+        localStorage.setItem("verseFontSize", verseFontSize);
+        setVerseFontSize(verseFontSize);
+      };
+      document.getElementById("font-decrease").onclick = function () {
+        verseFontSize = Math.max(12, verseFontSize - 4);
+        localStorage.setItem("verseFontSize", verseFontSize);
+        setVerseFontSize(verseFontSize);
+      };
+
+      // iframe이 새로 로드될 때마다 폰트 크기 적용
+      document.getElementById("verse-frame").addEventListener("load", function () {
+        setVerseFontSize(verseFontSize);
+      });
+      // 칭호 업데이트 함수
+      function updateTitleBadge(count) {
+        let titleIndex = Math.floor(count / 20);
+        if (titleIndex >= titles.length) titleIndex = titles.length - 1;
+        document.getElementById("title-badge").innerText = titles[titleIndex];
+      }
+
+      function toggleVersePart(verse) {
+        const iframe = document.getElementById("verse-frame");
+        const iframeDocument =
+          iframe.contentDocument || iframe.contentWindow.document;
+        const part = iframeDocument.getElementById(verse);
+
+        if (part.style.visibility === "hidden") {
+          part.style.visibility = "visible";
+        } else {
+          part.style.visibility = "hidden";
+        }
+
+        if (verse === "part1") {
+          const hideButton1 = document.getElementById("hide1");
+          hideButton1.innerText =
+            hideButton1.innerText === "HIDE1" ? "SHOW1" : "HIDE1";
+        } else if (verse === "part2") {
+          const hideButton2 = document.getElementById("hide2");
+          hideButton2.innerText =
+            hideButton2.innerText === "HIDE2" ? "SHOW2" : "HIDE2";
+        }
+      }
+
+      // 카카오톡 공유 함수
+      function shareToKakao() {
+        html2canvas(document.body).then((canvas) => {
+          const imageData = canvas.toDataURL("image/png");
+
+          // 카카오톡 공유 스크립트
+          Kakao.init("YOUR_KAKAO_APP_KEY"); // 카카오 앱 키를 입력하세요
+          Kakao.Link.sendDefault({
+            objectType: "feed",
+            content: {
+              title: "하가다 말씀",
+              description: "오늘의 말씀을 공유합니다.",
+              imageUrl: imageData,
+              link: {
+                mobileWebUrl: window.location.href,
+                webUrl: window.location.href,
+              },
+            },
+          });
+        });
+      }
+      // 날짜 업데이트 함수
+      function updateDate() {
+        const today = new Date();
+        const formattedDate =
+          today.getFullYear() +
+          "년 " +
+          (today.getMonth() + 1) +
+          "월 " +
+          today.getDate() +
+          "일";
+        document.getElementById("date").innerText = formattedDate;
+        return formattedDate;
+      }
+
+      // 말씀 로드 함수
+      function loadVerse() {
+        const timestamp = new Date().getTime();
+        const language = isKorean ? "verse_ko.html" : "verse_en.html"; // 언어에 따라 파일 선택
+        document.getElementById("verse-frame").src =
+          `${language}?t=${timestamp}`;
+      }
+
+      // 카운터 로드 함수
+      function loadCounter() {
+        const savedDate = localStorage.getItem("savedDate");
+        const savedCount = localStorage.getItem("counter");
+
+        const currentDate = updateDate();
+
+        if (savedDate === currentDate && savedCount !== null) {
+          count = parseInt(savedCount, 10);
+        } else {
+          count = 0;
+          localStorage.setItem("savedDate", currentDate);
+        }
+        document.getElementById("counter").innerText = count;
+
+        updateTitleBadge(count);
+      }
+
+      function flashBackground() {
+        document.body.classList.add("background-flash");
+
+        // 3초 후 클래스 제거
+        setTimeout(() => {
+          document.body.classList.remove("background-flash");
+        }, 3000);
+      }
+      function releaseBalloons() {
+        for (let i = 0; i < 10; i++) {
+          setTimeout(() => {
+            const balloon = document.createElement("div");
+            balloon.classList.add("balloon");
+
+            // 랜덤 색상
+            const colors = ["red", "blue", "green", "yellow", "purple"];
+            balloon.style.backgroundColor =
+              colors[Math.floor(Math.random() * colors.length)];
+
+            // 랜덤 위치
+            balloon.style.left = `${Math.random() * 100}vw`;
+
+            document.body.appendChild(balloon);
+
+            // 5초 후 풍선 제거
+            setTimeout(() => {
+              balloon.remove();
+            }, 5000);
+          }, i * 300); // 풍선이 순차적으로 나타나도록 딜레이 추가
+        }
+      }
+      // 카운터 증가 함수
+      function increaseCounter() {
+        count++;
+        document.getElementById("counter").innerText = count;
+        localStorage.setItem("counter", count);
+
+        // 20번 단위로 칭호 업데이트
+        updateTitleBadge(count);
+
+        // 10의 배수일 때 불꽃놀이 효과 실행
+        if (count % 10 === 0) {
+          triggerFirework();
+        }
+
+        // 100번 달성 시 특별 효과 실행
+        if (count === 100) {
+          triggerFirework();
+          flashBackground();
+          releaseBalloons();
+        }
+      }
+
+      // 불꽃놀이 효과 함수
+      function triggerFirework() {
+        const firework = document.createElement("div");
+        firework.classList.add("firework");
+
+        // 랜덤 색상 생성
+        const randomColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+        firework.style.backgroundColor = randomColor;
+
+        document.body.appendChild(firework);
+
+        // 1초 후 불꽃놀이 요소 제거
+        setTimeout(() => {
+          firework.remove();
+        }, 1000);
+      }
+
+      // 카운터 리셋 함수
+      function resetCounter() {
+        count = 0;
+        document.getElementById("counter").innerText = count;
+        localStorage.setItem("counter", count);
+        updateTitleBadge(count);
+
+        location.reload();
+      }
+
+      // 언어 전환 함수
+      function toggleLanguage() {
+        const toggleLangButton = document.querySelector(".toggle-lang");
+        const resetButton = document.querySelector(".reset");
+        const hideVerseButton = document.querySelector(".hide-verse");
+
+        if (isKorean) {
+          toggleLangButton.innerText = "Korean";
+          resetButton.innerText = "Reset";
+          isKorean = false;
+        } else {
+          toggleLangButton.innerText = "영문";
+          resetButton.innerText = "리셋";
+          isKorean = true;
+        }
+
+        // 말씀 파일 다시 로드
+        loadVerse();
+      }
+
+    // verse1~11.html 파일을 로드하는 함수
+function loadVerseFile(num) {
+  const timestamp = new Date().getTime();
+  document.getElementById("verse-frame").src = `verse${num}.html?t=${timestamp}`;
+}
+
+
+
+      // 페이지 로드 시 초기화
+      window.onload = function () {
+        loadVerse();
+        loadCounter();
+        setTimeout(() => setVerseFontSize(verseFontSize), 500);
+        
+        selectVerseBtn(currentVerseNum); // 저장된 값으로 verse 로드 및 버튼 하이라이트
+      };
+    </script>
+  </body>
+</html>
