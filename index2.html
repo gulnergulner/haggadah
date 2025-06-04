@@ -246,33 +246,39 @@
         animation: backgroundFlash 3s ease-in-out;
       }
 
+      /* 기존 스타일로 복원: +, - 버튼 */
       .font-size-btn {
-        font-size: 1.7rem;
-        width: 2rem;
-        height: 2rem;
-        padding: 0;
-        border-radius: 6px;
-        border: 1px solid #bbb;
+        font-family: "Courier New", Courier, monospace;
         background: #f3f3f3;
         color: #333;
+        border: 1px solid #bbb;
+        font-size: 1.25rem;
         font-weight: bold;
-        cursor: pointer;
-        vertical-align: middle;
-        box-shadow: none;
-        transition: background 0.2s;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-        aspect-ratio: 1 / 1;
+        border-radius: 6px;
+        width: 2rem;
+        height: 2rem;
         min-width: 2rem;
         min-height: 2rem;
         max-width: 2rem;
         max-height: 2rem;
-        margin: 0; /* 버튼 사이 간격 제거 */
+        box-shadow: none;
+        margin: 0 6px;
+        transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        padding: 0;
+        position: relative;
+      }
+      .font-size-btn:before {
+        display: none;
       }
       .font-size-btn:active {
         background: #e0e0e0;
+        color: #222;
+        box-shadow: none;
+        transform: scale(0.96);
       }
 
       .verse-select-btn {
@@ -362,9 +368,6 @@
           +
         </button>
       </div>
-    </div>
-    <div id="verse-buttons" style="margin: 10px 0">
-      <!-- 버튼이 JS로 생성됩니다 -->
     </div>
 
     <!-- 말씀 영역 -->
