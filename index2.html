@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
@@ -84,8 +84,7 @@
         cursor: pointer;
         border: none;
         border-radius: 25px; /* 완전히 둥근 모서리 */
-        box-shadow:
-          inset 0 -3px 5px rgba(0, 0, 0, 0.2),
+        box-shadow: inset 0 -3px 5px rgba(0, 0, 0, 0.2),
           /* 내부 그림자 */ 0 4px 6px rgba(0, 0, 0, 0.3); /* 외부 그림자 */
         color: white; /* 텍스트 색상 */
         font-weight: bold;
@@ -142,14 +141,22 @@
           to bottom,
           #9e9e9e,
           #757575
-        ); /* 회색 그라데이션 */
+        ); /* 기본 회색 */
+        transition: background 0.2s, color 0.2s;
+      }
+      .hide-verse.selected {
+        background: linear-gradient(
+          to bottom,
+          #ffd600,
+          #ffb300
+        ); /* 선택시 노란색 */
+        color: #333;
       }
 
       /* 버튼 클릭 효과 */
       button:active {
         transform: translateY(2px); /* 클릭 시 눌리는 효과 */
-        box-shadow:
-          inset 0 3px 5px rgba(0, 0, 0, 0.2),
+        box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.2),
           0 2px 4px rgba(0, 0, 0, 0.3); /* 클릭 시 그림자 줄이기 */
       }
 
@@ -282,10 +289,7 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        transition:
-          background 0.2s,
-          border 0.2s,
-          color 0.2s;
+        transition: background 0.2s, border 0.2s, color 0.2s;
         box-shadow: none;
         outline: none;
       }
@@ -374,19 +378,11 @@
       <div class="button-row">
         <!--<button class="share-kakao" onclick="shareToKakao()">공유</button>    -->
         <button class="reset" onclick="resetCounter()">리셋</button>
-        <button
-          class="hide-verse"
-          id="hide1"
-          onclick="toggleVersePart('part1')"
-        >
-          HIDE1
+        <button class="hide-verse" id="hide1" onclick="showVersePart('part1')">
+          PART1
         </button>
-        <button
-          class="hide-verse"
-          id="hide2"
-          onclick="toggleVersePart('part2')"
-        >
-          HIDE2
+        <button class="hide-verse" id="hide2" onclick="showVersePart('part2')">
+          PART2
         </button>
       </div>
       <div class="button-row">
@@ -427,6 +423,14 @@
           if (idx === num - 1) btn.classList.add("selected");
           else btn.classList.remove("selected");
         });
+
+        // verse 파일이 로드된 후 part1을 기본으로 보여줌
+        const iframe = document.getElementById("verse-frame");
+        iframe.onload = function () {
+          showVersePart("part1");
+          // onload 핸들러 중복 방지
+          iframe.onload = null;
+        };
       }
 
       // 폰트 크기 적용 함수
@@ -466,28 +470,82 @@
         document.getElementById("title-badge").innerText = titles[titleIndex];
       }
 
-      function toggleVersePart(verse) {
+      // part1/part2 표시 상태 관리
+      let currentShownPart = null;
+
+      function showVersePart(verse) {
         const iframe = document.getElementById("verse-frame");
         const iframeDocument =
           iframe.contentDocument || iframe.contentWindow.document;
-        const part = iframeDocument.getElementById(verse);
+        const part1 = iframeDocument.getElementById("part1");
+        const part2 = iframeDocument.getElementById("part2");
 
-        if (part.style.visibility === "hidden") {
-          part.style.visibility = "visible";
+        // 모두 숨김
+        if (part1) {
+          part1.style.visibility = "hidden";
+          part1.style.position = "";
+          part1.style.height = "";
+          part1.style.width = "";
+          part1.style.zIndex = "";
+        }
+        if (part2) {
+          part2.style.visibility = "hidden";
+          part2.style.position = "";
+          part2.style.height = "";
+          part2.style.width = "";
+          part2.style.zIndex = "";
+        }
+
+        // 선택된 부분만 보이기
+        if (verse === "part1" && part1) {
+          part1.style.visibility = "visible";
+          part1.style.position = "";
+          part1.style.height = "";
+          part1.style.width = "";
+          part1.style.zIndex = "";
+          currentShownPart = "part1";
+        } else if (verse === "part2" && part2) {
+          part2.style.visibility = "visible";
+          // part2가 나올 때 part1은 완전히 무시(공간 차지X)
+          if (part1) {
+            part1.style.position = "absolute";
+            part1.style.height = "0";
+            part1.style.width = "0";
+            part1.style.zIndex = "-1";
+          }
+          part2.style.position = "";
+          part2.style.height = "";
+          part2.style.width = "";
+          part2.style.zIndex = "";
+          currentShownPart = "part2";
         } else {
-          part.style.visibility = "hidden";
+          currentShownPart = null;
         }
 
-        if (verse === "part1") {
-          const hideButton1 = document.getElementById("hide1");
-          hideButton1.innerText =
-            hideButton1.innerText === "HIDE1" ? "SHOW1" : "HIDE1";
-        } else if (verse === "part2") {
-          const hideButton2 = document.getElementById("hide2");
-          hideButton2.innerText =
-            hideButton2.innerText === "HIDE2" ? "SHOW2" : "HIDE2";
-        }
+        // 버튼 색상 처리
+        const hide1 = document.getElementById("hide1");
+        const hide2 = document.getElementById("hide2");
+        hide1.classList.toggle("selected", currentShownPart === "part1");
+        hide2.classList.toggle("selected", currentShownPart === "part2");
       }
+
+      // iframe이 새로 로드될 때 part1/part2 숨김 초기화
+      document
+        .getElementById("verse-frame")
+        .addEventListener("load", function () {
+          // 모두 숨김
+          const iframe = document.getElementById("verse-frame");
+          const iframeDocument =
+            iframe.contentDocument || iframe.contentWindow.document;
+          const part1 = iframeDocument.getElementById("part1");
+          const part2 = iframeDocument.getElementById("part2");
+          if (part1) part1.style.visibility = "hidden";
+          if (part2) part2.style.visibility = "hidden";
+          // 버튼 색상 초기화
+          document.getElementById("hide1").classList.remove("selected");
+          document.getElementById("hide2").classList.remove("selected");
+          currentShownPart = null;
+        });
 
       // 카카오톡 공유 함수
       function shareToKakao() {
@@ -528,8 +586,9 @@
       function loadVerse() {
         const timestamp = new Date().getTime();
         const language = isKorean ? "verse_ko.html" : "verse_en.html"; // 언어에 따라 파일 선택
-        document.getElementById("verse-frame").src =
-          `${language}?t=${timestamp}`;
+        document.getElementById(
+          "verse-frame"
+        ).src = `${language}?t=${timestamp}`;
       }
 
       // 카운터 로드 함수
@@ -653,8 +712,9 @@
       // verse1~11.html 파일을 로드하는 함수
       function loadVerseFile(num) {
         const timestamp = new Date().getTime();
-        document.getElementById("verse-frame").src =
-          `verse${num}.html?t=${timestamp}`;
+        document.getElementById(
+          "verse-frame"
+        ).src = `verse${num}.html?t=${timestamp}`;
       }
 
       // 페이지 로드 시 초기화
