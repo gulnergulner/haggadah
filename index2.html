@@ -427,7 +427,7 @@
       // 기본 폰트 크기(px)
       const DEFAULT_FONT_SIZE = 20;
       let verseFontSize =
-        parseInt(localStorage.getItem("verseFontSize")) || DEFAULT_FONT_SIZE;
+        parseInt(localStorage.getItem("dtpVerseFontSize")) || DEFAULT_FONT_SIZE;
 
       let currentVerseNum =
         parseInt(localStorage.getItem("currentVerseNum")) || 1;
@@ -469,12 +469,12 @@
       // 폰트 크기 조정 버튼 이벤트
       document.getElementById("font-increase").onclick = function () {
         verseFontSize += 4;
-        localStorage.setItem("verseFontSize", verseFontSize);
+        localStorage.setItem("dtpVerseFontSize", verseFontSize);
         setVerseFontSize(verseFontSize);
       };
       document.getElementById("font-decrease").onclick = function () {
         verseFontSize = Math.max(12, verseFontSize - 4);
-        localStorage.setItem("verseFontSize", verseFontSize);
+        localStorage.setItem("dtpVerseFontSize", verseFontSize);
         setVerseFontSize(verseFontSize);
       };
 
