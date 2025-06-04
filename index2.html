@@ -32,18 +32,24 @@
 
       /* 말씀 영역 스타일 */
       #verse-container {
-        flex: 1; /* 화면의 남은 공간을 모두 차지 */
+        flex: 1;
         display: flex;
         justify-content: center;
         align-items: center;
         width: 100%;
-        height: auto; /* 높이를 자동으로 설정 */
+        height: 100%;
+        overflow: hidden; /* 부모에서 넘침 방지 */
+        position: relative;
       }
 
-      iframe {
+      #verse-frame {
         width: 100%;
         height: 100%;
         border: none;
+        overflow: auto; /* iframe 내부 스크롤 활성화 */
+        background: white;
+        /* 모바일에서 스크롤바 항상 표시 */
+        -webkit-overflow-scrolling: touch;
       }
 
       /* 카운터 스타일 */
@@ -371,7 +377,19 @@
     </div>
 
     <!-- 말씀 영역 -->
-    <div id="verse-container">
+    <div
+      id="verse-container"
+      style="
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        position: relative;
+      "
+    >
       <iframe id="verse-frame"></iframe>
     </div>
 
