@@ -501,13 +501,14 @@
         const part1 = iframeDocument.getElementById("part1");
         const part2 = iframeDocument.getElementById("part2");
 
-        // 모두 숨김
+        // 모두 숨김 및 스타일 초기화
         if (part1) {
           part1.style.visibility = "hidden";
           part1.style.position = "";
           part1.style.height = "";
           part1.style.width = "";
           part1.style.zIndex = "";
+          part1.style.display = "none";
         }
         if (part2) {
           part2.style.visibility = "hidden";
@@ -515,29 +516,17 @@
           part2.style.height = "";
           part2.style.width = "";
           part2.style.zIndex = "";
+          part2.style.display = "none";
         }
 
         // 선택된 부분만 보이기
         if (verse === "part1" && part1) {
           part1.style.visibility = "visible";
-          part1.style.position = "";
-          part1.style.height = "";
-          part1.style.width = "";
-          part1.style.zIndex = "";
+          part1.style.display = "block";
           currentShownPart = "part1";
         } else if (verse === "part2" && part2) {
           part2.style.visibility = "visible";
-          // part2가 나올 때 part1은 완전히 무시(공간 차지X)
-          if (part1) {
-            part1.style.position = "absolute";
-            part1.style.height = "0";
-            part1.style.width = "0";
-            part1.style.zIndex = "-1";
-          }
-          part2.style.position = "";
-          part2.style.height = "";
-          part2.style.width = "";
-          part2.style.zIndex = "";
+          part2.style.display = "block";
           currentShownPart = "part2";
         } else {
           currentShownPart = null;
