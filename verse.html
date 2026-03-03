@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+    />
+    <title>새가나안교회 하가다</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@200..900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Noto Serif KR", serif;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        margin: 0;
+        font-size: calc(3vw + 1.5vh); /* 화면 크기에 따라 글자 크기 조정 */
+        font-weight: bold;
+        line-height: 1.5;
+        padding: 20px;
+        word-wrap: break-word;
+        max-width: 90%;
+      }
+
+      /* 주제 스타일 */
+      .title {
+        font-size: calc(2vw + 1vh);
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <strong class="title" id="title">📖요한복음 15:5-6</strong><br />
+    <div id="part1"></div>
+    <div id="part2"></div>
+
+    <script>
+      // 현재 언어 가져오기 (부모 window에서)
+      function getCurrentLanguage() {
+        try {
+          return window.parent.isKorean ? "ko" : "en";
+        } catch {
+          return "ko"; // 기본값
+        }
+      }
+
+      // JSON 데이터 로드 및 표시
+      async function loadVerseData() {
+        try {
+          const language = getCurrentLanguage();
+
+          // localStorage에서 먼저 확인
+          const storedData = localStorage.getItem("verseData");
+          if (storedData) {
+            const data = JSON.parse(storedData);
+            const langData = data[language] || data.ko;
+            document.getElementById("title").textContent = langData.title;
+            document.getElementById("part1").innerHTML = langData.part1;
+            document.getElementById("part2").innerHTML = langData.part2;
+            return;
+          }
+
+          // localStorage에 없으면 JSON 파일에서 로드
+          const response = await fetch("data.json");
+          const data = await response.json();
+          const langData = data[language] || data.ko;
+
+          document.getElementById("title").textContent = langData.title;
+          document.getElementById("part1").innerHTML = langData.part1;
+          document.getElementById("part2").innerHTML = langData.part2;
+        } catch (error) {
+          console.error("Error loading verse data:", error);
+        }
+      }
+
+      // 페이지 로드 시 데이터 로드
+      window.addEventListener("load", loadVerseData);
+
+      // storage 변경 감지 (다른 탭/창에서 변경 시 자동 갱신)
+      window.addEventListener("storage", loadVerseData);
+    </script>
+  </body>
+</html>
