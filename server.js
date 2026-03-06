@@ -12,9 +12,23 @@ app.use(cors());
 // JSON 파싱 미들웨어
 app.use(express.json());
 
-// 정적 파일 서빙 (HTML, CSS, JS, JSON)
-app.use(express.static(__dirname));
+// 정적 파일 서빙 (HTML, CSS, JS)
+app.use(express.static(path.join(__dirname, 'react/dist')));
 
+// Serve data.json dynamic without cache
+app.get("/data.json", (req, res) => {
+  const filepath = path.join(__dirname, "data.json");
+  try {
+    const data = fs.readFileSync(filepath, "utf-8");
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.json(JSON.parse(data));
+  } catch (error) {
+    res.status(500).json({ error: "Failed to read data.json" });
+  }
+});
+
+// For any other static files in root
+app.use(express.static(__dirname));
 // JSON 저장 API
 app.post("/api/save-json", (req, res) => {
   try {
@@ -36,9 +50,14 @@ app.post("/api/save-json", (req, res) => {
   }
 });
 
+// React Router wildcard 캡처
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'react/dist/index.html'));
+});
+
 // 서버 시작
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
-  console.log(`📋 관리자 페이지: http://localhost:${PORT}/index_admin.html`);
-  console.log(`📖 메인 페이지: http://localhost:${PORT}/index.html`);
+  console.log(`📖 메인 페이지: http://localhost:${PORT}/`);
+  console.log(`📋 관리자 페이지: http://localhost:${PORT}/admin`);
 });
