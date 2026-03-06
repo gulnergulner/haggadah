@@ -177,7 +177,7 @@ function Main() {
       localStorage.setItem("counter", String(next));
 
       if (next % 10 === 0) {
-        triggerFirework();
+        triggerFirework(next);
         triggerFlash();
       }
 
@@ -215,10 +215,21 @@ function Main() {
     window.setTimeout(() => setFlashActive(false), 1600);
   };
 
-  const triggerFirework = () => {
-    const color = rewardColors[Math.floor(Math.random() * rewardColors.length)];
-    setFirework({ id: Date.now(), color });
-    window.setTimeout(() => setFirework(null), 1000);
+  const triggerFirework = (milestone) => {
+    const burstSparks = Array.from({ length: 60 }).map((_, index) => {
+      const angle = Math.random() * Math.PI * 2;
+      const velocity = 80 + Math.random() * 200;
+      return {
+        id: `f-${Date.now()}-${index}`,
+        tx: Math.cos(angle) * velocity,
+        ty: Math.sin(angle) * velocity,
+        color: rewardColors[Math.floor(Math.random() * rewardColors.length)],
+        delay: Math.random() * 0.15,
+        scale: 0.5 + Math.random() * 1.5,
+      };
+    });
+    setFirework({ id: Date.now(), sparks: burstSparks, text: `${milestone}번 읊조림! 🔥` });
+    window.setTimeout(() => setFirework(null), 2000);
   };
 
   const triggerReward = () => {
@@ -332,8 +343,22 @@ function Main() {
       </section>
 
       {firework && (
-        <div className="firework" key={firework.id}>
-          <span style={{ backgroundColor: firework.color }} />
+        <div className="firework-container" key={firework.id}>
+          {firework.sparks.map((spark) => (
+            <div
+              key={spark.id}
+              className="firework-spark"
+              style={{
+                backgroundColor: spark.color,
+                boxShadow: `0 0 10px ${spark.color}`,
+                "--tx": `${spark.tx}px`,
+                "--ty": `${spark.ty}px`,
+                "--scale": spark.scale,
+                animationDelay: `${spark.delay}s`,
+              }}
+            />
+          ))}
+          <div className="firework-text">{firework.text}</div>
         </div>
       )}
 

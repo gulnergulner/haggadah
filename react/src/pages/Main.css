@@ -133,20 +133,32 @@
   font-size: 18px;
 }
 
-.firework {
+.firework-container {
   position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  z-index: 100;
 }
 
-.firework span {
-  width: 12px;
-  height: 12px;
+.firework-spark {
+  position: absolute;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  animation: fireworkBurst 1s ease-out forwards;
+  opacity: 0;
+  animation: sparkExplosion 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.firework-text {
+  font-size: 36px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 30px #ffc75f;
+  animation: textPopFade 1.8s ease-out forwards;
+  z-index: 101;
 }
 
 .reward-overlay {
@@ -205,14 +217,45 @@
   animation: confettiFall 4s ease-in forwards;
 }
 
-@keyframes fireworkBurst {
+@keyframes sparkExplosion {
   0% {
-    transform: scale(1);
+    transform: translate(0, 0) scale(0);
+    opacity: 1;
+  }
+
+  50% {
     opacity: 1;
   }
 
   100% {
-    transform: scale(25);
+    transform: translate(var(--tx), var(--ty)) scale(var(--scale));
+    opacity: 0;
+  }
+}
+
+@keyframes textPopFade {
+  0% {
+    transform: translateY(40px) scale(0.5);
+    opacity: 0;
+  }
+
+  15% {
+    transform: translateY(0px) scale(1.2);
+    opacity: 1;
+  }
+
+  30% {
+    transform: translateY(0px) scale(1);
+    opacity: 1;
+  }
+
+  80% {
+    transform: translateY(-20px) scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-40px) scale(0.8);
     opacity: 0;
   }
 }
