@@ -14,20 +14,13 @@ const titles = [
   "🏆 말씀의 챔피언",
 ];
 
-const rewardColors = [
-  "#ff6b6b",
-  "#ffc75f",
-  "#4ecdc4",
-  "#b983ff",
-  "#4da3ff",
-  "#ff8fab",
-];
-
 const plantStages = [
-  { threshold: 100, emoji: "🍎", name: "풍성한 열매", desc: "100번 달성! 훌륭해요!" },
-  { threshold: 75, emoji: "🌳", name: "무성한 나무", desc: "말씀이 풍성해져요" },
-  { threshold: 50, emoji: "🌿", name: "작은 나무", desc: "믿음이 쑥쑥 자라요" },
-  { threshold: 25, emoji: "🌱", name: "새싹", desc: "말씀의 싹이 텄어요" },
+  { threshold: 300, emoji: "🌟", name: "빛의 증인", desc: "300번 달성! 세상에 빛을 비추는 증인이 되었어요" },
+  { threshold: 200, emoji: "💎", name: "믿음의 보석", desc: "200번 달성! 빛나는 보석 같아요" },
+  { threshold: 100, emoji: "🍎", name: "풍성한 열매", desc: "100번 달성! 열매가 가득 맺혔어요" },
+  { threshold: 50, emoji: "🌳", name: "무성한 나무", desc: "말씀의 그늘이 시원하게 드리워요" },
+  { threshold: 25, emoji: "🌿", name: "작은 나무", desc: "말씀의 뿌리가 깊게 내려요" },
+  { threshold: 10, emoji: "🌱", name: "새싹", desc: "말씀의 싹이 텄어요" },
   { threshold: 0, emoji: "🫘", name: "말씀 씨앗", desc: "은혜의 단비가 내려요" },
 ];
 
@@ -64,18 +57,28 @@ function splitWithBreaks(text) {
   return text.split(/<br\s*\/?>(\n)?/gi).filter((chunk) => chunk !== undefined);
 }
 
+function computeStreakBadge(streak, currentCount) {
+  if (currentCount >= 100 && streak > 0) {
+    return `🏆 100회 달성 ${streak}일차!`;
+  }
+  if (streak > 0) {
+    return `🔥 ${streak}일 연속 달성 중`;
+  }
+  return currentCount >= 100 ? "🏆 오늘 100회 달성!" : "첫걸음을 응원해요 🌱";
+}
+
 function Main() {
   const [verseData, setVerseData] = useState(null);
   const [count, setCount] = useState(0);
+  const [streak, setStreak] = useState(0);
   const [isKorean, setIsKorean] = useState(true);
   const [hidePart1, setHidePart1] = useState(false);
   const [hidePart2, setHidePart2] = useState(false);
   const [verseFontSize, setVerseFontSize] = useState(defaultFontSize);
   const [todayText, setTodayText] = useState("");
   const [titleBadge, setTitleBadge] = useState(titles[0]);
-  const [flashActive, setFlashActive] = useState(false);
-  const [firework, setFirework] = useState(null);
-  const [reward, setReward] = useState(null);
+  const [sparksActive, setSparksActive] = useState(false);
+  const [confettiActive, setConfettiActive] = useState(false);
   const [currentDisplaySunday, setCurrentDisplaySunday] = useState(() => getRecentSunday(new Date()));
 
   const currentLang = isKorean ? "ko" : "en";
@@ -128,10 +131,20 @@ function Main() {
     setTodayText(todayStr);
 
     const todayDateOnly = new Date().toISOString().split('T')[0];
+    const yesterdayDateOnly = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
     const savedDate = localStorage.getItem("savedDate");
     const storedCount = parseStoredNumber(localStorage.getItem("counter"), 0);
     const nextCount = savedDate === todayDateOnly ? storedCount : 0;
+
+    let storedStreak = parseStoredNumber(localStorage.getItem("streak"), 0);
+    const lastActiveDate = localStorage.getItem("lastActiveDate");
+
+    // Check if the streak is broken (did not hit 100 yesterday or today)
+    if (lastActiveDate !== todayDateOnly && lastActiveDate !== yesterdayDateOnly) {
+      storedStreak = 0;
+      localStorage.setItem("streak", "0");
+    }
 
     if (savedDate !== todayDateOnly) {
       localStorage.setItem("savedDate", todayDateOnly);
@@ -139,6 +152,7 @@ function Main() {
     }
 
     setCount(nextCount);
+    setStreak(storedStreak);
     setIsKorean(parseStoredBoolean(localStorage.getItem("isKorean"), true));
     setHidePart1(parseStoredBoolean(localStorage.getItem("hidePart1"), false));
     setHidePart2(parseStoredBoolean(localStorage.getItem("hidePart2"), false));
@@ -178,13 +192,23 @@ function Main() {
       const next = prev + 1;
       localStorage.setItem("counter", String(next));
 
-      if (next % 10 === 0) {
-        triggerFirework(next);
-        triggerFlash();
+      // Trigger visual effects
+      if (next === 100) {
+        setConfettiActive(true);
+        window.setTimeout(() => setConfettiActive(false), 3000);
+      } else if (next % 10 === 0 && next > 0) {
+        setSparksActive(true);
+        window.setTimeout(() => setSparksActive(false), 1200);
       }
 
+      // If hitting 100 for the first time today, increment streak
       if (next === 100) {
-        triggerReward();
+        setStreak((prevStreak) => {
+          const nextStreak = prevStreak + 1;
+          localStorage.setItem("streak", String(nextStreak));
+          localStorage.setItem("lastActiveDate", new Date().toISOString().split('T')[0]);
+          return nextStreak;
+        });
       }
 
       return next;
@@ -212,75 +236,73 @@ function Main() {
     });
   };
 
-  const triggerFlash = () => {
-    setFlashActive(true);
-    window.setTimeout(() => setFlashActive(false), 1600);
+  const handleShare = async () => {
+    const textToShare = `${count}번 읊조렸습니다! ${currentPlant.emoji} ${currentPlant.name}\n${badgeText}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          text: textToShare,
+        });
+      } catch (err) {
+        // user cancelled or share failed silently
+      }
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      try {
+        await navigator.clipboard.writeText(textToShare);
+        alert("클립보드에 복사되었습니다!");
+      } catch (err) {
+        alert("공유하기를 지원하지 않는 브라우저입니다.");
+      }
+    }
   };
 
-  const triggerFirework = (milestone) => {
-    const burstSparks = Array.from({ length: 60 }).map((_, index) => {
-      const angle = Math.random() * Math.PI * 2;
-      const velocity = 80 + Math.random() * 200;
-      return {
-        id: `f-${Date.now()}-${index}`,
-        tx: Math.cos(angle) * velocity,
-        ty: Math.sin(angle) * velocity,
-        color: rewardColors[Math.floor(Math.random() * rewardColors.length)],
-        delay: Math.random() * 0.15,
-        scale: 0.5 + Math.random() * 1.5,
-      };
-    });
-    setFirework({ id: Date.now(), sparks: burstSparks, text: `${milestone}번 읊조림! 🔥` });
-    window.setTimeout(() => setFirework(null), 2000);
-  };
-
-  const triggerReward = () => {
-    const balloons = Array.from({ length: 12 }).map((_, index) => ({
-      id: `b-${Date.now()}-${index}`,
-      left: Math.random() * 100,
-      size: 36 + Math.random() * 26,
-      delay: Math.random() * 0.3,
-      drift: (Math.random() - 0.5) * 120,
-      color: rewardColors[Math.floor(Math.random() * rewardColors.length)],
-    }));
-
-    const confetti = Array.from({ length: 40 }).map((_, index) => ({
-      id: `c-${Date.now()}-${index}`,
-      left: Math.random() * 100,
-      size: 6 + Math.random() * 8,
-      delay: Math.random() * 0.4,
-      drift: (Math.random() - 0.5) * 160,
-      rotation: Math.random() * 360,
-      color: rewardColors[Math.floor(Math.random() * rewardColors.length)],
-    }));
-
-    setReward({ id: Date.now(), balloons, confetti });
-    window.setTimeout(() => setReward(null), 5000);
-  };
+  const currentPlant = plantStages.find((s) => count >= s.threshold);
+  const badgeText = computeStreakBadge(streak, count);
 
   const part1Lines = useMemo(
     () => splitWithBreaks(currentData?.part1),
     [currentData?.part1],
   );
+
   const part2Lines = useMemo(
     () => splitWithBreaks(currentData?.part2),
     [currentData?.part2],
   );
 
-  const currentPlant = plantStages.find((s) => count >= s.threshold);
-
   return (
-    <div className={`app ${flashActive ? "flash" : ""}`}>
+    <div className="app">
       <div className="water-bg" style={{ height: `${Math.min(count, 100)}%`, opacity: count > 0 ? 1 : 0 }}>
         <div className="water-wave"></div>
         <div className="water-wave-2"></div>
       </div>
-      <header className="header" style={{ position: 'relative' }}>
-        <div style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }}>
-          <button onClick={handlePrevWeek} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>&lt; 이전</button>
-        </div>
+      <header className="header">
         <div className="header-center">
-          <div className="date">{todayText}</div>
+          <div className="week-navigation">
+            <button className="nav-arrow" onClick={handlePrevWeek} aria-label="이전 주">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="date">{todayText}</div>
+            <button className="nav-arrow" onClick={handleNextWeek} aria-label="다음 주">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <div className="divider"></div>
+            <button className="font-button" onClick={handleDecreaseFont} aria-label="글자 크기 축소">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+              </svg>
+            </button>
+            <button className="font-button" onClick={handleIncreaseFont} aria-label="글자 크기 확대">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </button>
+          </div>
           <div className="growth-stage">
             <div className="plant-emoji" key={currentPlant.emoji}>{currentPlant.emoji}</div>
             <div className="plant-info">
@@ -288,15 +310,6 @@ function Main() {
               <div className="plant-desc">{currentPlant.desc}</div>
             </div>
           </div>
-        </div>
-        <div className="font-buttons">
-          <button onClick={handleNextWeek} style={{ marginRight: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>다음 &gt;</button>
-          <button className="font-button" onClick={handleDecreaseFont}>
-            -
-          </button>
-          <button className="font-button" onClick={handleIncreaseFont}>
-            +
-          </button>
         </div>
       </header>
 
@@ -334,6 +347,9 @@ function Main() {
       </main>
 
       <section className="control-panel">
+        <div className="streak-badge">
+          {badgeText}
+        </div>
         <div className="counter">{count}</div>
         <div className="button-row">
           <button className="btn reset" onClick={handleResetCounter}>
@@ -348,6 +364,9 @@ function Main() {
           <button className="btn hide" onClick={handleTogglePart2}>
             {hidePart2 ? "SHOW2" : "HIDE2"}
           </button>
+          <button className="btn share" style={{ background: "linear-gradient(to bottom, #9c27b0, #7b1fa2)" }} onClick={handleShare}>
+            {isKorean ? "공유" : "Share"}
+          </button>
         </div>
         <div className="button-row">
           <button className="btn increase" onClick={handleIncreaseCounter}>
@@ -356,67 +375,45 @@ function Main() {
         </div>
       </section>
 
-      {firework && (
-        <div className="firework-container" key={firework.id}>
-          {firework.sparks.map((spark) => (
+      {/* 10-count spark effect */}
+      {sparksActive && (
+        <div className="effect-container">
+          {Array.from({ length: 12 }).map((_, i) => (
             <div
-              key={spark.id}
-              className="firework-spark"
+              key={i}
+              className="spark-particle"
               style={{
-                backgroundColor: spark.color,
-                boxShadow: `0 0 10px ${spark.color}`,
-                "--tx": `${spark.tx}px`,
-                "--ty": `${spark.ty}px`,
-                "--scale": spark.scale,
-                animationDelay: `${spark.delay}s`,
+                "--tx": `${(Math.random() - 0.5) * 200}px`,
+                "--ty": `${(Math.random() - 0.5) * 200}px`,
+                "--scale": 0.5 + Math.random(),
+                backgroundColor: i % 2 === 0 ? "#FFD700" : "#FF6B6B",
+                left: "50%",
+                top: "50%"
               }}
             />
           ))}
-          <div className="firework-text">{firework.text}</div>
         </div>
       )}
 
-      {reward && (
-        <div className="reward-overlay" key={reward.id}>
-          {reward.balloons.map((balloon) => (
+      {/* 100-count confetti effect */}
+      {confettiActive && (
+        <div className="effect-container">
+          {Array.from({ length: 50 }).map((_, i) => (
             <div
-              key={balloon.id}
-              className="reward-balloon"
+              key={i}
+              className="confetti-particle"
               style={{
-                left: `${balloon.left}%`,
-                width: `${balloon.size}px`,
-                height: `${balloon.size * 1.3}px`,
-                backgroundColor: balloon.color,
-                animationDelay: `${balloon.delay}s`,
-                "--drift": `${balloon.drift}px`,
+                "--drift": `${(Math.random() - 0.5) * 400}px`,
+                "--rotation": `${Math.random() * 360}deg`,
+                backgroundColor: ["#FFD700", "#FF6B6B", "#4ECDC4", "#4DA3FF", "#B983FF"][Math.floor(Math.random() * 5)],
+                left: `${Math.random() * 100}%`,
+                top: "-5%"
               }}
             />
           ))}
-          {reward.confetti.map((piece) => (
-            <div
-              key={piece.id}
-              className="reward-confetti"
-              style={{
-                left: `${piece.left}%`,
-                width: `${piece.size}px`,
-                height: `${piece.size * 1.6}px`,
-                backgroundColor: piece.color,
-                animationDelay: `${piece.delay}s`,
-                "--drift": `${piece.drift}px`,
-                "--rotation": `${piece.rotation}deg`,
-              }}
-            />
-          ))}
-          <div className="reward-card">
-            <div className="reward-title">🎉 100회 달성! 🎉</div>
-            <div className="reward-subtitle">
-              {isKorean
-                ? "말씀의 챔피언이 되었어요!"
-                : "You are a Word Champion!"}
-            </div>
-          </div>
         </div>
       )}
+
     </div>
   );
 }
