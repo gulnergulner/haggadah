@@ -114,7 +114,9 @@ function Main() {
   }, []);
 
   useEffect(() => {
-    const todayStr = formatDate(currentDisplaySunday);
+    const d = new Date();
+    const todayFormatted = `${d.getMonth() + 1}월 ${d.getDate()}일`;
+    const todayStr = `${formatDate(currentDisplaySunday)} (${todayFormatted})`;
     setTodayText(todayStr);
 
     const todayDateOnly = new Date().toISOString().split('T')[0];
