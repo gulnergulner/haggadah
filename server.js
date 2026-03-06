@@ -87,9 +87,15 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'react/dist/index.html'));
 });
 
-// 서버 시작
-app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
-  console.log(`📖 메인 페이지: http://localhost:${PORT}/`);
-  console.log(`📋 관리자 페이지: http://localhost:${PORT}/admin`);
-});
+// 로컬 (내 PC) 환경에서만 직접 서버를 실행합니다.
+// Vercel 환경(서버리스)에서는 Vercel이 알아서 app을 실행해주기 때문에 listen을 직접 호출하면 안 됩니다.
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
+    console.log(`📖 메인 페이지: http://localhost:${PORT}/`);
+    console.log(`📋 관리자 페이지: http://localhost:${PORT}/admin`);
+  });
+}
+
+// Vercel Serverless Function으로 동작하기 위해 app을 내보냅니다(export)
+module.exports = app;
