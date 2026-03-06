@@ -23,9 +23,17 @@ const rewardColors = [
   "#ff8fab",
 ];
 
-function formatToday() {
-  const now = new Date();
-  return `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 주간`;
+}
+
+function getRecentSunday(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day;
+  d.setDate(diff);
+  return d.toISOString().split('T')[0];
 }
 
 function parseStoredBoolean(value, fallback) {
@@ -56,9 +64,24 @@ function Main() {
   const [flashActive, setFlashActive] = useState(false);
   const [firework, setFirework] = useState(null);
   const [reward, setReward] = useState(null);
+  const [currentDisplaySunday, setCurrentDisplaySunday] = useState(() => getRecentSunday(new Date()));
 
   const currentLang = isKorean ? "ko" : "en";
-  const currentData = verseData?.[currentLang] || verseData?.ko || null;
+  // Fallback to legacy root format if it exists, otherwise use keyed data
+  const weekData = verseData?.[currentDisplaySunday] || (verseData?.ko ? verseData : null);
+  const currentData = weekData?.[currentLang] || weekData?.ko || null;
+
+  const handlePrevWeek = () => {
+    const d = new Date(currentDisplaySunday);
+    d.setDate(d.getDate() - 7);
+    setCurrentDisplaySunday(d.toISOString().split('T')[0]);
+  };
+
+  const handleNextWeek = () => {
+    const d = new Date(currentDisplaySunday);
+    d.setDate(d.getDate() + 7);
+    setCurrentDisplaySunday(d.toISOString().split('T')[0]);
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -87,15 +110,17 @@ function Main() {
   }, []);
 
   useEffect(() => {
-    const today = formatToday();
-    setTodayText(today);
+    const todayStr = formatDate(currentDisplaySunday);
+    setTodayText(todayStr);
+
+    const todayDateOnly = new Date().toISOString().split('T')[0];
 
     const savedDate = localStorage.getItem("savedDate");
     const storedCount = parseStoredNumber(localStorage.getItem("counter"), 0);
-    const nextCount = savedDate === today ? storedCount : 0;
+    const nextCount = savedDate === todayDateOnly ? storedCount : 0;
 
-    if (savedDate !== today) {
-      localStorage.setItem("savedDate", today);
+    if (savedDate !== todayDateOnly) {
+      localStorage.setItem("savedDate", todayDateOnly);
       localStorage.setItem("counter", "0");
     }
 
@@ -111,7 +136,7 @@ function Main() {
     );
 
     loadData();
-  }, [loadData]);
+  }, [loadData, currentDisplaySunday]);
 
   useEffect(() => {
     const index = Math.min(Math.floor(count / 20), titles.length - 1);
@@ -227,12 +252,16 @@ function Main() {
 
   return (
     <div className={`app ${flashActive ? "flash" : ""}`}>
-      <header className="header">
+      <header className="header" style={{ position: 'relative' }}>
+        <div style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }}>
+          <button onClick={handlePrevWeek} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>&lt; 이전</button>
+        </div>
         <div className="header-center">
           <div className="date">{todayText}</div>
           <div className="title-badge">{titleBadge}</div>
         </div>
         <div className="font-buttons">
+          <button onClick={handleNextWeek} style={{ marginRight: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>다음 &gt;</button>
           <button className="font-button" onClick={handleDecreaseFont}>
             -
           </button>
@@ -248,7 +277,7 @@ function Main() {
             className="verse-title"
             style={{ fontSize: `${Math.max(14, verseFontSize * 0.8)}px` }}
           >
-            {currentData?.title || ""}
+            {currentData ? (currentData.title || "") : "이 주간 등록된 말씀이 없습니다."}
           </div>
           <div
             className={`verse-part ${hidePart1 ? "hidden" : ""}`}
