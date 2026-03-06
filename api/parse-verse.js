@@ -16,7 +16,16 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { pastorMessage } = req.body;
+        let parsedBody = req.body;
+        if (typeof req.body === 'string') {
+            try {
+                parsedBody = JSON.parse(req.body);
+            } catch (e) {
+                return res.status(400).json({ error: "Invalid JSON body format" });
+            }
+        }
+
+        const { pastorMessage } = parsedBody || {};
         if (!pastorMessage) {
             return res.status(400).json({ error: "No message provided" });
         }
