@@ -23,6 +23,14 @@ const rewardColors = [
   "#ff8fab",
 ];
 
+const plantStages = [
+  { threshold: 100, emoji: "🍎", name: "풍성한 열매", desc: "100번 달성! 훌륭해요!" },
+  { threshold: 75, emoji: "🌳", name: "무성한 나무", desc: "말씀이 풍성해져요" },
+  { threshold: 50, emoji: "🌿", name: "작은 나무", desc: "믿음이 쑥쑥 자라요" },
+  { threshold: 25, emoji: "🌱", name: "새싹", desc: "말씀의 싹이 텄어요" },
+  { threshold: 0, emoji: "🫘", name: "말씀 씨앗", desc: "은혜의 단비가 내려요" },
+];
+
 function formatDate(dateStr) {
   const d = new Date(dateStr);
   return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 주간`;
@@ -131,9 +139,6 @@ function Main() {
     }
 
     setCount(nextCount);
-    setTitleBadge(
-      titles[Math.min(Math.floor(nextCount / 20), titles.length - 1)],
-    );
     setIsKorean(parseStoredBoolean(localStorage.getItem("isKorean"), true));
     setHidePart1(parseStoredBoolean(localStorage.getItem("hidePart1"), false));
     setHidePart2(parseStoredBoolean(localStorage.getItem("hidePart2"), false));
@@ -143,11 +148,6 @@ function Main() {
 
     loadData();
   }, [loadData, currentDisplaySunday]);
-
-  useEffect(() => {
-    const index = Math.min(Math.floor(count / 20), titles.length - 1);
-    setTitleBadge(titles[index]);
-  }, [count]);
 
   const handleToggleLanguage = () => {
     setIsKorean((prev) => {
@@ -267,15 +267,27 @@ function Main() {
     [currentData?.part2],
   );
 
+  const currentPlant = plantStages.find((s) => count >= s.threshold);
+
   return (
     <div className={`app ${flashActive ? "flash" : ""}`}>
+      <div className="water-bg" style={{ height: `${Math.min(count, 100)}%`, opacity: count > 0 ? 1 : 0 }}>
+        <div className="water-wave"></div>
+        <div className="water-wave-2"></div>
+      </div>
       <header className="header" style={{ position: 'relative' }}>
         <div style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }}>
           <button onClick={handlePrevWeek} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>&lt; 이전</button>
         </div>
         <div className="header-center">
           <div className="date">{todayText}</div>
-          <div className="title-badge">{titleBadge}</div>
+          <div className="growth-stage">
+            <div className="plant-emoji" key={currentPlant.emoji}>{currentPlant.emoji}</div>
+            <div className="plant-info">
+              <div className="plant-name">{currentPlant.name}</div>
+              <div className="plant-desc">{currentPlant.desc}</div>
+            </div>
+          </div>
         </div>
         <div className="font-buttons">
           <button onClick={handleNextWeek} style={{ marginRight: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>다음 &gt;</button>
