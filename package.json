@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
+    "build": "cd react && npm install && npm run build && cd .. && rm -rf public && cp -R react/dist public",
     "build-start": "cd react && npm install && npm run build && cd .. && node server.js"
   },
   "keywords": [

@@ -1,30 +1,13 @@
 {
     "version": 2,
-    "builds": [
+    "rewrites": [
         {
-            "src": "react/package.json",
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "dist"
-            }
+            "source": "/data.json",
+            "destination": "/api/data"
         },
         {
-            "src": "api/*.js",
-            "use": "@vercel/node"
-        }
-    ],
-    "routes": [
-        {
-            "src": "/data.json",
-            "dest": "/api/data.js"
-        },
-        {
-            "src": "/api/(.*)",
-            "dest": "/api/$1.js"
-        },
-        {
-            "src": "/(.*)",
-            "dest": "/react/dist/$1"
+            "source": "/(.*)",
+            "destination": "/index.html"
         }
     ]
 }
