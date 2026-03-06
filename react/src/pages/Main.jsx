@@ -31,9 +31,13 @@ function formatDate(dateStr) {
 function getRecentSunday(date) {
   const d = new Date(date);
   const day = d.getDay();
-  const diff = d.getDate() - day;
-  d.setDate(diff);
-  return d.toISOString().split('T')[0];
+  d.setDate(d.getDate() - day);
+
+  // Format locally YYYY-MM-DD
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const dom = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${dom}`;
 }
 
 function parseStoredBoolean(value, fallback) {

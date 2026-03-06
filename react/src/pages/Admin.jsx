@@ -1,14 +1,18 @@
 import { useState, useEffect } from "react";
 import "./Admin.css";
 
-const ADMIN_PASSWORD = "1234";
+const ADMIN_PASSWORD = "apple9191";
 
 const getRecentSunday = (date) => {
     const d = new Date(date);
     const day = d.getDay(); // 0 is Sunday
-    const diff = d.getDate() - day;
-    d.setDate(diff);
-    return d.toISOString().split('T')[0];
+    d.setDate(d.getDate() - day);
+
+    // Format locally to prevent UTC shift (e.g. Sunday 8am KST becoming Saturday UTC)
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const dom = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${dom}`;
 };
 
 function Admin() {
@@ -67,6 +71,11 @@ function Admin() {
     };
 
     const handleChange = (lang, field, value) => {
+        let finalValue = value;
+        if (field === "title" && value.length > 0 && !value.includes("📖")) {
+            finalValue = "📖" + value;
+        }
+
         setVerseData((prev) => {
             const currentWk = prev[selectedSunday] || {
                 ko: { title: "", part1: "", part2: "" },
@@ -78,7 +87,7 @@ function Admin() {
                     ...currentWk,
                     [lang]: {
                         ...currentWk[lang],
-                        [field]: value,
+                        [field]: finalValue,
                     }
                 }
             };
@@ -179,7 +188,7 @@ function Admin() {
                     <input
                         type="date"
                         value={selectedSunday}
-                        onChange={(e) => setSelectedSunday(e.target.value)}
+                        onChange={(e) => setSelectedSunday(getRecentSunday(e.target.value))}
                         style={{ padding: '8px', fontSize: '16px', borderRadius: '4px', border: '1px solid #ddd' }}
                     />
                     <button onClick={handleNextWeek} style={{ padding: '8px 15px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #ddd', background: '#f9f9f9' }}>다음 주 &gt;</button>
