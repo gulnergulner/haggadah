@@ -77,8 +77,8 @@ function Main() {
   const [verseFontSize, setVerseFontSize] = useState(defaultFontSize);
   const [todayText, setTodayText] = useState("");
   const [titleBadge, setTitleBadge] = useState(titles[0]);
-  const [sparksActive, setSparksActive] = useState(false);
-  const [confettiActive, setConfettiActive] = useState(false);
+  const [leavesActive, setLeavesActive] = useState(false);
+  const [starlightActive, setStarlightActive] = useState(false);
   const [currentDisplaySunday, setCurrentDisplaySunday] = useState(() => getRecentSunday(new Date()));
 
   const currentLang = isKorean ? "ko" : "en";
@@ -194,21 +194,29 @@ function Main() {
 
       // Trigger visual effects
       if (next === 100) {
-        setConfettiActive(true);
-        window.setTimeout(() => setConfettiActive(false), 3000);
+        setStarlightActive(true);
+        window.setTimeout(() => setStarlightActive(false), 4000);
+        // Also trigger falling leaves for 100
+        setLeavesActive(true);
+        window.setTimeout(() => setLeavesActive(false), 3000);
       } else if (next % 10 === 0 && next > 0) {
-        setSparksActive(true);
-        window.setTimeout(() => setSparksActive(false), 1200);
+        setLeavesActive(true);
+        window.setTimeout(() => setLeavesActive(false), 3000);
       }
 
       // If hitting 100 for the first time today, increment streak
       if (next === 100) {
-        setStreak((prevStreak) => {
-          const nextStreak = prevStreak + 1;
-          localStorage.setItem("streak", String(nextStreak));
-          localStorage.setItem("lastActiveDate", new Date().toISOString().split('T')[0]);
-          return nextStreak;
-        });
+        const todayDateOnly = new Date().toISOString().split('T')[0];
+        const lastDate = localStorage.getItem("lastActiveDate");
+
+        if (lastDate !== todayDateOnly) {
+          setStreak((prevStreak) => {
+            const nextStreak = prevStreak + 1;
+            localStorage.setItem("streak", String(nextStreak));
+            localStorage.setItem("lastActiveDate", todayDateOnly);
+            return nextStreak;
+          });
+        }
       }
 
       return next;
@@ -237,7 +245,7 @@ function Main() {
   };
 
   const handleShare = async () => {
-    const textToShare = `${count}번 읊조렸습니다! ${currentPlant.emoji} ${currentPlant.name}\n${badgeText}`;
+    const textToShare = `${count}번 읊조렸습니다!\n${badgeText}`;
 
     if (navigator.share) {
       try {
@@ -273,10 +281,6 @@ function Main() {
 
   return (
     <div className="app">
-      <div className="water-bg" style={{ height: `${Math.min(count, 100)}%`, opacity: count > 0 ? 1 : 0 }}>
-        <div className="water-wave"></div>
-        <div className="water-wave-2"></div>
-      </div>
       <header className="header">
         <div className="header-center">
           <div className="week-navigation">
@@ -375,39 +379,41 @@ function Main() {
         </div>
       </section>
 
-      {/* 10-count spark effect */}
-      {sparksActive && (
-        <div className="effect-container">
+      {/* 10-count falling leaves effect */}
+      {leavesActive && (
+        <div className="effect-container leaves-container">
           {Array.from({ length: 12 }).map((_, i) => (
             <div
               key={i}
-              className="spark-particle"
+              className="leaf-particle"
               style={{
-                "--tx": `${(Math.random() - 0.5) * 200}px`,
-                "--ty": `${(Math.random() - 0.5) * 200}px`,
-                "--scale": 0.5 + Math.random(),
-                backgroundColor: i % 2 === 0 ? "#FFD700" : "#FF6B6B",
-                left: "50%",
-                top: "50%"
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${3 + Math.random() * 2}s`,
+                fontSize: `${20 + Math.random() * 14}px`,
+                transform: `rotate(${Math.random() * 360}deg)`
               }}
-            />
+            >
+              🌿
+            </div>
           ))}
         </div>
       )}
 
-      {/* 100-count confetti effect */}
-      {confettiActive && (
-        <div className="effect-container">
-          {Array.from({ length: 50 }).map((_, i) => (
+      {/* 100-count starlight effect */}
+      {starlightActive && (
+        <div className="effect-container starlight-container">
+          {Array.from({ length: 40 }).map((_, i) => (
             <div
               key={i}
-              className="confetti-particle"
+              className="starlight-particle"
               style={{
-                "--drift": `${(Math.random() - 0.5) * 400}px`,
-                "--rotation": `${Math.random() * 360}deg`,
-                backgroundColor: ["#FFD700", "#FF6B6B", "#4ECDC4", "#4DA3FF", "#B983FF"][Math.floor(Math.random() * 5)],
-                left: `${Math.random() * 100}%`,
-                top: "-5%"
+                "--driftX": `${(Math.random() - 0.5) * 150}px`,
+                "--riseY": `-${100 + Math.random() * 80}vh`,
+                "--duration": `${2.5 + Math.random() * 2}s`,
+                "--delay": `${Math.random() * 1.5}s`,
+                left: `${10 + Math.random() * 80}%`, // Stay mostly in bounds
+                bottom: "-20px"
               }}
             />
           ))}
