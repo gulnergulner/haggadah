@@ -57,14 +57,34 @@ function splitWithBreaks(text) {
   return text.split(/<br\s*\/?>(\n)?/gi).filter((chunk) => chunk !== undefined);
 }
 
-function computeStreakBadge(streak, currentCount) {
-  if (currentCount >= 100 && streak > 0) {
-    return `🏆 100회 달성 ${streak}일차!`;
+function getWeekDays(dateStr) {
+  const d = new Date(dateStr);
+  const day = d.getDay();
+  // We want Sunday (0) to Saturday (6)
+  const sunday = new Date(d);
+  sunday.setDate(d.getDate() - day);
+
+  const days = [];
+  const dayNames = ['주', '월', '화', '수', '목', '금', '토'];
+  for (let i = 0; i < 7; i++) {
+    const nextDay = new Date(sunday);
+    nextDay.setDate(sunday.getDate() + i);
+    days.push({
+      date: nextDay.toISOString().split('T')[0],
+      name: dayNames[i]
+    });
   }
-  if (streak > 0) {
-    return `🔥 ${streak}일 연속 달성 중`;
-  }
-  return currentCount >= 100 ? "🏆 오늘 100회 달성!" : "첫걸음을 응원해요 🌱";
+  return days;
+}
+
+function calculateMissedDays(startDateStr, endDateStr) {
+  if (!startDateStr || !endDateStr) return 0;
+  const start = new Date(startDateStr);
+  const end = new Date(endDateStr);
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  const diffTime = end.getTime() - start.getTime();
+  return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
 }
 
 function Main() {
@@ -81,11 +101,14 @@ function Main() {
   });
   const [count, setCount] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [graceCards, setGraceCards] = useState(0);
+  const [total100sCount, setTotal100sCount] = useState(0);
+  const [streakHistory, setStreakHistory] = useState({});
+  const [showDashboard, setShowDashboard] = useState(false);
   const [isKorean, setIsKorean] = useState(true);
   const [hidePart1, setHidePart1] = useState(false);
   const [hidePart2, setHidePart2] = useState(false);
   const [verseFontSize, setVerseFontSize] = useState(defaultFontSize);
-  const [todayText, setTodayText] = useState("");
   const [titleBadge, setTitleBadge] = useState(titles[0]);
   const [leavesActive, setLeavesActive] = useState(false);
   const [starlightActive, setStarlightActive] = useState(false);
@@ -95,6 +118,10 @@ function Main() {
   // Fallback to legacy root format if it exists, otherwise use keyed data
   const weekData = verseData?.[currentDisplaySunday] || (verseData?.ko ? verseData : null);
   const currentData = weekData?.[currentLang] || weekData?.ko || null;
+
+  const todayDateObj = new Date();
+  const todayFormatted = `${todayDateObj.getMonth() + 1}월 ${todayDateObj.getDate()}일`;
+  const todayText = `${formatDate(currentDisplaySunday)} (${todayFormatted})`;
 
   const handlePrevWeek = () => {
     const d = new Date(currentDisplaySunday);
@@ -110,8 +137,9 @@ function Main() {
 
   const loadData = useCallback(async () => {
     try {
-      // Add a cache buster so we always get fresh data silently in the background
-      const timestamp = new Date().getTime();
+      // Add a cache buster based on the ACTUAL current week's Sunday date.
+      // This ensures we fetch fresh data only once per week, and rely on browser cache otherwise.
+      const timestamp = getRecentSunday(new Date());
       const response = await fetch(`${dataUrl}?t=${timestamp}`);
       if (response.ok) {
         const json = await response.json();
@@ -131,11 +159,6 @@ function Main() {
   }, []);
 
   useEffect(() => {
-    const d = new Date();
-    const todayFormatted = `${d.getMonth() + 1}월 ${d.getDate()}일`;
-    const todayStr = `${formatDate(currentDisplaySunday)} (${todayFormatted})`;
-    setTodayText(todayStr);
-
     const todayDateOnly = new Date().toISOString().split('T')[0];
     const yesterdayDateOnly = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
@@ -144,10 +167,53 @@ function Main() {
     const nextCount = savedDate === todayDateOnly ? storedCount : 0;
 
     let storedStreak = parseStoredNumber(localStorage.getItem("streak"), 0);
+    let storedGraceCards = parseStoredNumber(localStorage.getItem("graceCards"), 0);
+    let storedTotal100sCount = parseStoredNumber(localStorage.getItem("total100sCount"), 0);
+    let storedStreakHistory = {};
+    try {
+      storedStreakHistory = JSON.parse(localStorage.getItem("streakHistory")) || {};
+    } catch { }
+
+    // Automatic Sunday Grace Card Granting
+    if (new Date().getDay() === 0) { // 0 is Sunday
+      const lastSundayGraceCard = localStorage.getItem("lastSundayGraceCard");
+      if (lastSundayGraceCard !== todayDateOnly) {
+        storedGraceCards += 1;
+        localStorage.setItem("graceCards", String(storedGraceCards));
+        localStorage.setItem("lastSundayGraceCard", todayDateOnly);
+      }
+    }
+
     const lastActiveDate = localStorage.getItem("lastActiveDate");
 
     // Check if the streak is broken (did not hit 100 yesterday or today)
-    if (lastActiveDate !== todayDateOnly && lastActiveDate !== yesterdayDateOnly) {
+    if (lastActiveDate && lastActiveDate !== todayDateOnly && lastActiveDate !== yesterdayDateOnly) {
+      const missedDays = calculateMissedDays(lastActiveDate, yesterdayDateOnly);
+
+      if (missedDays > 0) {
+        if (storedGraceCards >= missedDays) {
+          // Auto-recover missed days using Grace Cards
+          storedGraceCards -= missedDays;
+          localStorage.setItem("graceCards", String(storedGraceCards));
+
+          let loopDate = new Date(lastActiveDate);
+          for (let i = 0; i < missedDays; i++) {
+            loopDate.setDate(loopDate.getDate() + 1);
+            const missedDateStr = loopDate.toISOString().split('T')[0];
+            storedStreakHistory[missedDateStr] = true;
+          }
+          localStorage.setItem("streakHistory", JSON.stringify(storedStreakHistory));
+
+          storedStreak += missedDays;
+          localStorage.setItem("streak", String(storedStreak));
+          localStorage.setItem("lastActiveDate", yesterdayDateOnly); // Artificially progress the last active date
+        } else {
+          // Not enough cards, streak broken
+          storedStreak = 0;
+          localStorage.setItem("streak", "0");
+        }
+      }
+    } else if (!lastActiveDate) {
       storedStreak = 0;
       localStorage.setItem("streak", "0");
     }
@@ -159,6 +225,9 @@ function Main() {
 
     setCount(nextCount);
     setStreak(storedStreak);
+    setGraceCards(storedGraceCards);
+    setTotal100sCount(storedTotal100sCount);
+    setStreakHistory(storedStreakHistory);
     setIsKorean(parseStoredBoolean(localStorage.getItem("isKorean"), true));
     setHidePart1(parseStoredBoolean(localStorage.getItem("hidePart1"), false));
     setHidePart2(parseStoredBoolean(localStorage.getItem("hidePart2"), false));
@@ -167,7 +236,7 @@ function Main() {
     );
 
     loadData();
-  }, [loadData, currentDisplaySunday]);
+  }, [loadData]);
 
   const handleToggleLanguage = () => {
     setIsKorean((prev) => {
@@ -210,12 +279,34 @@ function Main() {
         window.setTimeout(() => setLeavesActive(false), 3000);
       }
 
-      // If hitting 100 for the first time today, increment streak
+      // If hitting 100 for the first time today, increment streak and manage 100s
       if (next === 100) {
         const todayDateOnly = new Date().toISOString().split('T')[0];
         const lastDate = localStorage.getItem("lastActiveDate");
 
         if (lastDate !== todayDateOnly) {
+          // Increment 100s counter and check for Grace Card reward
+          setTotal100sCount((prev100) => {
+            const next100 = prev100 + 1;
+            localStorage.setItem("total100sCount", String(next100));
+
+            if (next100 % 5 === 0) {
+              setGraceCards((prevCards) => {
+                const nextCards = prevCards + 1;
+                localStorage.setItem("graceCards", String(nextCards));
+                return nextCards;
+              });
+            }
+            return next100;
+          });
+
+          // Mark day internally as completed
+          setStreakHistory((prevHistory) => {
+            const newHistory = { ...prevHistory, [todayDateOnly]: true };
+            localStorage.setItem("streakHistory", JSON.stringify(newHistory));
+            return newHistory;
+          });
+
           setStreak((prevStreak) => {
             const nextStreak = prevStreak + 1;
             localStorage.setItem("streak", String(nextStreak));
@@ -273,7 +364,8 @@ function Main() {
   };
 
   const currentPlant = plantStages.find((s) => count >= s.threshold);
-  const badgeText = computeStreakBadge(streak, count);
+  const weekDays = useMemo(() => getWeekDays(new Date().toISOString().split('T')[0]), []);
+  const badgeText = `${count}번 읊조렸습니다! [🔥 ${streak}일 연속 달성 중]`;
 
   const part1Lines = useMemo(
     () => splitWithBreaks(currentData?.part1),
@@ -357,10 +449,56 @@ function Main() {
       </main>
 
       <section className="control-panel">
-        <div className="streak-badge">
-          {badgeText}
-        </div>
+
+        {/* Top-level Streak Badge (Click to open Dashboard) */}
+        {!showDashboard && (
+          <button className="streak-badge-btn" onClick={() => setShowDashboard(true)}>
+            🔥 {streak}일 연속 달성 ▾
+          </button>
+        )}
+
         <div className="counter">{count}</div>
+
+        {/* Sleek Visual Dashboard */}
+        {showDashboard && (
+          <div className="streak-dashboard">
+            <button className="dashboard-close-btn" onClick={() => setShowDashboard(false)}>✕</button>
+            <div className="dashboard-top">
+              <div className="streak-flame">
+                <span className="flame-icon">🔥</span>
+                <div className="flame-text">
+                  <span className="tiny-label">STREAK</span>
+                  <span className="big-value">{streak} DAYS</span>
+                </div>
+              </div>
+              <div className="grace-cards" title="회복카드: 하루를 놓쳐도 연속 기록을 유지해줍니다!">
+                💖 <span className="card-count">x {graceCards}</span>
+              </div>
+            </div>
+
+            <div className="dashboard-middle">
+              {weekDays.map((d) => (
+                <div key={d.date} className="day-circle-container">
+                  <div className={`day-circle ${streakHistory[d.date] ? 'completed' : ''}`}>
+                    {streakHistory[d.date] && <span className="checkmark">✓</span>}
+                  </div>
+                  <span className="day-name">{d.name}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="dashboard-bottom">
+              <div className="progress-labels">
+                <span className="progress-title">COUNT</span>
+                <span className="progress-ratio"><strong>{count}</strong> / 100</span>
+              </div>
+              <div className="progress-bar-container">
+                <div className="progress-bar-fill" style={{ width: `${Math.min(100, (count / 100) * 100)}%` }} />
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="button-row">
           <button className="btn reset" onClick={handleResetCounter}>
             {isKorean ? "리셋" : "Reset"}
