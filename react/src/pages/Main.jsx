@@ -394,8 +394,8 @@ function Main() {
               className="leaf-particle"
               style={{
                 left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${3 + Math.random() * 2}s`,
+                "--animationDelay": `${Math.random() * 1.5}s`,
+                "--animationDuration": `${2.5 + Math.random() * 2}s`,
                 fontSize: `${20 + Math.random() * 14}px`,
                 transform: `rotate(${Math.random() * 360}deg)`
               }}
