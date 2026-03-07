@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import "./Admin.css";
 
-const ADMIN_PASSWORD = "apple9191";
-
 const getRecentSunday = (date) => {
     const d = new Date(date);
     const day = d.getDay(); // 0 is Sunday
@@ -23,6 +21,8 @@ function Admin() {
     const [successMsg, setSuccessMsg] = useState("");
     const [selectedSunday, setSelectedSunday] = useState(getRecentSunday(new Date()));
 
+    const [newPassword, setNewPassword] = useState("");
+    const [passwordMsg, setPasswordMsg] = useState("");
     const [verseData, setVerseData] = useState({});
 
     useEffect(() => {
@@ -54,14 +54,25 @@ function Admin() {
         }
     };
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        if (password === ADMIN_PASSWORD) {
-            setIsLoggedIn(true);
-            setErrorMsg("");
-        } else {
-            setErrorMsg("❌ 비밀번호가 틀렸습니다.");
-            setPassword("");
+        setErrorMsg("");
+
+        try {
+            const response = await fetch("/api/verify-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password })
+            });
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                setIsLoggedIn(true);
+            } else {
+                setErrorMsg("❌ 비밀번호가 틀렸습니다.");
+            }
+        } catch (error) {
+            setErrorMsg("❌ 서버에 연결할 수 없습니다.");
         }
     };
 
@@ -118,24 +129,58 @@ function Admin() {
         localStorage.removeItem("verseData");
 
         // Show success message
-        setSuccessMsg("✓ 저장되었습니다.");
-        setTimeout(() => setSuccessMsg(""), 3000);
+        setSuccessMsg("✓ 저장 중...");
 
         // Save to server
         try {
             const response = await fetch("/api/save-json", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-admin-password": password
+                },
                 body: JSON.stringify({ filename: "data.json", data: updatedData }),
             });
+
             if (response.ok) {
+                setSuccessMsg("✓ 서버에 저장되었습니다.");
                 console.log("✓ 서버에 저장되었습니다.");
             } else {
+                setSuccessMsg("⚠️ 저장 실패 (잘못된 비밀번호)");
                 console.log("⚠️ 서버 저장 실패.");
             }
         } catch (error) {
+            setSuccessMsg("⚠️ 서버 연결 불가.");
             console.log("⚠️ 서버 연결 불가.", error);
         }
+
+        setTimeout(() => setSuccessMsg(""), 3000);
+    };
+
+    const handleChangePassword = async (e) => {
+        e.preventDefault();
+        setPasswordMsg("변경 중...");
+
+        try {
+            const response = await fetch("/api/change-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ currentPassword: password, newPassword: newPassword })
+            });
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                setPasswordMsg("✅ 비밀번호가 성공적으로 변경되었습니다.");
+                setPassword(newPassword); // Update active session password
+                setNewPassword("");
+            } else {
+                setPasswordMsg(`❌ 변경 실패: ${result.error || "알 수 없는 오류"}`);
+            }
+        } catch (error) {
+            setPasswordMsg("❌ 서버에 연결할 수 없습니다.");
+        }
+
+        setTimeout(() => setPasswordMsg(""), 4000);
     };
 
     const handleDownloadJson = () => {
@@ -287,6 +332,32 @@ function Admin() {
                             ⬇️ Download JSON
                         </button>
                     </div>
+                </div>
+
+                {/* Password Change Section */}
+                <div style={{ marginTop: '40px', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#334155', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>🔐</span> 관리자 비밀번호 변경
+                    </h3>
+                    <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <input
+                                type="password"
+                                placeholder="새 비밀번호 입력 (4자 이상)"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                            />
+                            <button
+                                type="submit"
+                                disabled={newPassword.length < 4}
+                                style={{ padding: '10px 20px', background: newPassword.length < 4 ? '#94a3b8' : '#0ea5e9', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: newPassword.length < 4 ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}
+                            >
+                                변경하기
+                            </button>
+                        </div>
+                        {passwordMsg && <div style={{ fontSize: '14px', color: passwordMsg.includes('✅') ? '#059669' : '#dc2626', marginTop: '5px' }}>{passwordMsg}</div>}
+                    </form>
                 </div>
             </div>
         </div>
