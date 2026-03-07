@@ -68,7 +68,17 @@ function computeStreakBadge(streak, currentCount) {
 }
 
 function Main() {
-  const [verseData, setVerseData] = useState(null);
+  const [verseData, setVerseData] = useState(() => {
+    const cached = localStorage.getItem("verseData");
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch {
+        localStorage.removeItem("verseData");
+      }
+    }
+    return null;
+  });
   const [count, setCount] = useState(0);
   const [streak, setStreak] = useState(0);
   const [isKorean, setIsKorean] = useState(true);
@@ -100,27 +110,23 @@ function Main() {
 
   const loadData = useCallback(async () => {
     try {
-      // Add a cache buster so we always get fresh data
+      // Add a cache buster so we always get fresh data silently in the background
       const timestamp = new Date().getTime();
       const response = await fetch(`${dataUrl}?t=${timestamp}`);
       if (response.ok) {
         const json = await response.json();
         localStorage.setItem("verseData", JSON.stringify(json));
-        setVerseData(json);
-        return; // Success! Return early
+
+        // Prevent unnecessary re-renders if the data hasn't actually changed
+        setVerseData((prevData) => {
+          if (JSON.stringify(prevData) === JSON.stringify(json)) {
+            return prevData;
+          }
+          return json;
+        });
       }
     } catch {
-      // ignore network errors
-    }
-
-    // Fallback to cache ONLY if network fails
-    const cached = localStorage.getItem("verseData");
-    if (cached) {
-      try {
-        setVerseData(JSON.parse(cached));
-      } catch {
-        localStorage.removeItem("verseData");
-      }
+      // ignore network errors, we already have the cached data rendered
     }
   }, []);
 
