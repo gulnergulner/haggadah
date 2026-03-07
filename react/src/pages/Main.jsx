@@ -245,7 +245,7 @@ function Main() {
   };
 
   const handleShare = async () => {
-    const textToShare = `${count}번 읊조렸습니다!\n${badgeText}`;
+    const textToShare = `${count}번 읊조렸습니다.`;
 
     if (navigator.share) {
       try {
@@ -360,7 +360,7 @@ function Main() {
             {isKorean ? "리셋" : "Reset"}
           </button>
           <button className="btn toggle" onClick={handleToggleLanguage}>
-            {isKorean ? "영문" : "Korean"}
+            {isKorean ? "English" : "한국어"}
           </button>
           <button className="btn hide" onClick={handleTogglePart1}>
             {hidePart1 ? "SHOW1" : "HIDE1"}
