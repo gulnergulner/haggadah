@@ -228,6 +228,24 @@
   align-items: center;
 }
 
+.global-count-badge {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  text-align: center;
+  margin-top: -10px;
+  backdrop-filter: blur(4px);
+}
+
+.global-count-badge strong {
+  color: #ffffff;
+  font-size: 15px;
+  margin: 0 4px;
+}
+
 .streak-flame {
   display: flex;
   align-items: center;

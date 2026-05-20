@@ -146,6 +146,65 @@ app.post("/api/save-json", async (req, res) => {
   }
 });
 
+// --- Global Stats API ---
+
+// 1. Get the current global total for a specific week
+app.get('/api/global-count/:weekDate', async (req, res) => {
+  try {
+    const { weekDate } = req.params;
+
+    // Validate date format (YYYY-MM-DD)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(weekDate)) {
+      return res.status(400).json({ error: "Invalid date format. Expected YYYY-MM-DD." });
+    }
+
+    const { data, error } = await supabase
+      .from('global_stats')
+      .select('total_count')
+      .eq('week_date', weekDate)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "Rows not found", which is fine, it just means 0
+      console.error("Supabase Error fetching global count:", error);
+      throw error;
+    }
+
+    res.json({ weekDate, totalCount: data ? data.total_count : 0 });
+  } catch (error) {
+    console.error("Error fetching global count:", error);
+    res.status(500).json({ error: "Failed to fetch global count" });
+  }
+});
+
+// 2. Safely increment the global total using the Supabase RPC
+app.post('/api/share-count', async (req, res) => {
+  try {
+    const { weekDate, incrementAmount } = req.body;
+
+    if (!weekDate || typeof incrementAmount !== 'number' || incrementAmount < 0) {
+      return res.status(400).json({ error: "Invalid payload. Needs weekDate and positive incrementAmount." });
+    }
+
+    if (incrementAmount > 0) {
+      // Call the Postgres function we created to safely increment without race conditions
+      const { error } = await supabase.rpc('increment_global_count', {
+        week_val: weekDate,
+        amount: incrementAmount
+      });
+
+      if (error) {
+        console.error("Supabase Error incrementing global count:", error);
+        throw error;
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error updating share count:", error);
+    res.status(500).json({ error: "Failed to update share count" });
+  }
+});
+
 // React Router wildcard 캡처
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'react/dist/index.html'));

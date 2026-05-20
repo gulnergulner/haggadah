@@ -112,6 +112,8 @@ function Main() {
   const [titleBadge, setTitleBadge] = useState(titles[0]);
   const [leavesActive, setLeavesActive] = useState(false);
   const [starlightActive, setStarlightActive] = useState(false);
+  const [globalCount, setGlobalCount] = useState(0);
+  const [lastSharedCount, setLastSharedCount] = useState(0);
   const [currentDisplaySunday, setCurrentDisplaySunday] = useState(() => getRecentSunday(new Date()));
 
   const currentLang = isKorean ? "ko" : "en";
@@ -157,6 +159,22 @@ function Main() {
       // ignore network errors, we already have the cached data rendered
     }
   }, []);
+
+  const fetchGlobalCount = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/global-count/${currentDisplaySunday}`);
+      if (response.ok) {
+        const json = await response.json();
+        setGlobalCount(json.totalCount);
+      }
+    } catch {
+      // ignore silently
+    }
+  }, [currentDisplaySunday]);
+
+  useEffect(() => {
+    fetchGlobalCount();
+  }, [fetchGlobalCount]);
 
   useEffect(() => {
     const todayDateOnly = new Date().toISOString().split('T')[0];
@@ -228,6 +246,7 @@ function Main() {
     setGraceCards(storedGraceCards);
     setTotal100sCount(storedTotal100sCount);
     setStreakHistory(storedStreakHistory);
+    setLastSharedCount(parseStoredNumber(localStorage.getItem("lastSharedCount"), 0));
     setIsKorean(parseStoredBoolean(localStorage.getItem("isKorean"), true));
     setHidePart1(parseStoredBoolean(localStorage.getItem("hidePart1"), false));
     setHidePart2(parseStoredBoolean(localStorage.getItem("hidePart2"), false));
@@ -361,6 +380,34 @@ function Main() {
         alert("공유하기를 지원하지 않는 브라우저입니다.");
       }
     }
+
+    // Publish increment to Global Share Counter
+    const todayDateOnly = new Date().toISOString().split('T')[0];
+    const savedShareDate = localStorage.getItem("lastSharedCountDate");
+    const baseline = savedShareDate === todayDateOnly ? lastSharedCount : 0;
+
+    const incrementAmount = count - baseline;
+
+    if (incrementAmount > 0) {
+      try {
+        await fetch('/api/share-count', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            weekDate: currentDisplaySunday,
+            incrementAmount
+          })
+        });
+
+        // Optimistically update local UI
+        setGlobalCount(prev => prev + incrementAmount);
+        setLastSharedCount(count);
+        localStorage.setItem("lastSharedCount", String(count));
+        localStorage.setItem("lastSharedCountDate", todayDateOnly);
+      } catch (err) {
+        console.error("Failed to update global count", err);
+      }
+    }
   };
 
   const currentPlant = plantStages.find((s) => count >= s.threshold);
@@ -474,6 +521,10 @@ function Main() {
               <div className="grace-cards" title="회복카드: 하루를 놓쳐도 연속 기록을 유지해줍니다!">
                 💖 <span className="card-count">x {graceCards}</span>
               </div>
+            </div>
+
+            <div className="global-count-badge">
+              🌍 이번 주 전체 성도 누적: <strong>{globalCount.toLocaleString()}</strong>번
             </div>
 
             <div className="dashboard-middle">
