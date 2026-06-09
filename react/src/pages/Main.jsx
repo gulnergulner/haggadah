@@ -165,7 +165,8 @@ function Main() {
 
   const fetchGlobalCount = useCallback(async () => {
     try {
-      const response = await fetch(`/api/global-count/${currentDisplaySunday}`);
+      const params = new URLSearchParams({ weekDate: currentDisplaySunday });
+      const response = await fetch(`/api/global-count?${params}`);
       if (response.ok) {
         const json = await response.json();
         setGlobalCount(json.totalCount);

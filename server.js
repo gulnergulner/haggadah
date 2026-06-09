@@ -166,14 +166,22 @@ app.post("/api/save-json", async (req, res) => {
 
 // --- Global Stats API ---
 
-// 1. Get the current global total for a specific week
-app.get('/api/global-count/:weekDate', async (req, res) => {
-  try {
-    const { weekDate } = req.params;
+function readWeekDate(req) {
+  return req.query.weekDate || req.params.weekDate;
+}
 
-    // Validate date format (YYYY-MM-DD)
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(weekDate)) {
-      return res.status(400).json({ error: "Invalid date format. Expected YYYY-MM-DD." });
+function isValidDateString(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+// 1. Get the current global total for a specific week.
+// Preferred shape: /api/global-count?weekDate=YYYY-MM-DD
+async function handleGlobalCount(req, res) {
+  try {
+    const weekDate = readWeekDate(req);
+
+    if (!isValidDateString(weekDate)) {
+      return res.status(400).json({ error: "Invalid weekDate. Expected YYYY-MM-DD." });
     }
 
     const { data, error } = await supabase
@@ -192,7 +200,10 @@ app.get('/api/global-count/:weekDate', async (req, res) => {
     console.error("Error fetching global count:", error);
     res.status(500).json({ error: "Failed to fetch global count" });
   }
-});
+}
+
+app.get('/api/global-count', handleGlobalCount);
+app.get('/api/global-count/:weekDate', handleGlobalCount);
 
 // 2. Safely increment the global total using the Supabase RPC
 app.post('/api/share-count', async (req, res) => {
