@@ -1,17 +1,6 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { addDays, getRecentSunday } from "../utils/date";
 import "./Admin.css";
-
-const getRecentSunday = (date) => {
-    const d = new Date(date);
-    const day = d.getDay(); // 0 is Sunday
-    d.setDate(d.getDate() - day);
-
-    // Format locally to prevent UTC shift (e.g. Sunday 8am KST becoming Saturday UTC)
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const dom = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${dom}`;
-};
 
 function Admin() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -25,13 +14,7 @@ function Admin() {
     const [passwordMsg, setPasswordMsg] = useState("");
     const [verseData, setVerseData] = useState({});
 
-    useEffect(() => {
-        if (isLoggedIn) {
-            loadData();
-        }
-    }, [isLoggedIn]);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             const cached = localStorage.getItem("verseData");
             let dataToSet = {};
@@ -52,7 +35,13 @@ function Admin() {
         } catch (error) {
             console.error("Error loading data:", error);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (isLoggedIn) {
+            loadData();
+        }
+    }, [isLoggedIn, loadData]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -71,7 +60,7 @@ function Admin() {
             } else {
                 setErrorMsg("❌ 비밀번호가 틀렸습니다.");
             }
-        } catch (error) {
+        } catch {
             setErrorMsg("❌ 서버에 연결할 수 없습니다.");
         }
     };
@@ -106,15 +95,11 @@ function Admin() {
     };
 
     const handlePrevWeek = () => {
-        const d = new Date(selectedSunday);
-        d.setDate(d.getDate() - 7);
-        setSelectedSunday(d.toISOString().split('T')[0]);
+        setSelectedSunday(addDays(selectedSunday, -7));
     };
 
     const handleNextWeek = () => {
-        const d = new Date(selectedSunday);
-        d.setDate(d.getDate() + 7);
-        setSelectedSunday(d.toISOString().split('T')[0]);
+        setSelectedSunday(addDays(selectedSunday, 7));
     };
 
     const currentVerse = verseData[selectedSunday] || {
@@ -122,7 +107,7 @@ function Admin() {
         en: { title: "", part1: "", part2: "" }
     };
 
-    const handleSave = async (lang) => {
+    const handleSave = async () => {
         const updatedData = { ...verseData };
 
         // Clear local storage cache so it forces a fetch everywhere
@@ -176,7 +161,7 @@ function Admin() {
             } else {
                 setPasswordMsg(`❌ 변경 실패: ${result.error || "알 수 없는 오류"}`);
             }
-        } catch (error) {
+        } catch {
             setPasswordMsg("❌ 서버에 연결할 수 없습니다.");
         }
 

@@ -1,5 +1,4 @@
 const express = require("express");
-const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
 const { createClient } = require('@supabase/supabase-js');
@@ -13,6 +12,9 @@ const PORT = 3000;
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("Missing required Supabase environment variables.");
+}
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // CORS 설정
@@ -54,17 +56,20 @@ app.use(express.static(__dirname));
 
 // Helper to fetch the admin password from Supabase app_config
 async function getAdminPassword() {
-  try {
-    const { data, error } = await supabase
-      .from('app_config')
-      .select('value')
-      .eq('key', 'admin_password')
-      .single();
-    if (error || !data) return "apple9191"; // Default fallback
-    return data.value;
-  } catch (err) {
-    return "apple9191";
+  const { data, error } = await supabase
+    .from('app_config')
+    .select('value')
+    .eq('key', 'admin_password')
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
   }
+
+  return typeof data?.value === "string" && data.value.length > 0
+    ? data.value
+    : null;
 }
 
 // 비밀번호 검증 API
@@ -72,6 +77,11 @@ app.post("/api/verify-password", async (req, res) => {
   try {
     const { password } = req.body;
     const currentPassword = await getAdminPassword();
+
+    if (!currentPassword) {
+      return res.status(503).json({ success: false, error: "Admin password is not configured" });
+    }
+
     if (password === currentPassword) {
       res.json({ success: true });
     } else {
@@ -88,6 +98,10 @@ app.post("/api/change-password", async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const actualPassword = await getAdminPassword();
+
+    if (!actualPassword) {
+      return res.status(503).json({ success: false, error: "관리자 비밀번호가 설정되어 있지 않습니다." });
+    }
 
     if (currentPassword !== actualPassword) {
       return res.status(401).json({ success: false, error: "현재 비밀번호가 일치하지 않습니다." });
@@ -114,6 +128,10 @@ app.post("/api/save-json", async (req, res) => {
   try {
     const providedPassword = req.headers['x-admin-password'];
     const actualPassword = await getAdminPassword();
+
+    if (!actualPassword) {
+      return res.status(503).json({ error: "Admin password is not configured" });
+    }
 
     if (providedPassword !== actualPassword) {
       return res.status(401).json({ error: "Unauthorized: Invalid password" });

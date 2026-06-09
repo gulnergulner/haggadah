@@ -1,18 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { addDays, formatLocalDate, getRecentSunday, parseLocalDate } from "../utils/date";
 import "./Main.css";
 
 const dataUrl = "/data.json";
 const defaultFontSize = 20;
 const minFontSize = 12;
-
-const titles = [
-  "🌱 새싹",
-  "⭐ 말씀 지킴이",
-  "🔥 신앙의 불꽃",
-  "💎 믿음의 보석",
-  "🌟 빛의 증인",
-  "🏆 말씀의 챔피언",
-];
 
 const plantStages = [
   { threshold: 300, emoji: "🌟", name: "빛의 증인", desc: "300번 달성! 세상에 빛을 비추는 증인이 되었어요" },
@@ -24,21 +16,37 @@ const plantStages = [
   { threshold: 0, emoji: "🫘", name: "말씀 씨앗", desc: "은혜의 단비가 내려요" },
 ];
 
-function formatDate(dateStr) {
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 주간`;
+function seededRandom(seed) {
+  const value = Math.sin(seed) * 10000;
+  return value - Math.floor(value);
 }
 
-function getRecentSunday(date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  d.setDate(d.getDate() - day);
+const leafParticles = Array.from({ length: 12 }, (_, index) => {
+  const seed = index + 1;
+  return {
+    left: `${seededRandom(seed * 11) * 100}%`,
+    "--animationDelay": `${seededRandom(seed * 13) * 1.5}s`,
+    "--animationDuration": `${2.5 + seededRandom(seed * 17) * 2}s`,
+    fontSize: `${20 + seededRandom(seed * 19) * 14}px`,
+    transform: `rotate(${seededRandom(seed * 23) * 360}deg)`,
+  };
+});
 
-  // Format locally YYYY-MM-DD
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const dom = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${dom}`;
+const starlightParticles = Array.from({ length: 40 }, (_, index) => {
+  const seed = index + 1;
+  return {
+    "--driftX": `${(seededRandom(seed * 29) - 0.5) * 150}px`,
+    "--riseY": `-${100 + seededRandom(seed * 31) * 80}vh`,
+    "--duration": `${2.5 + seededRandom(seed * 37) * 2}s`,
+    "--delay": `${seededRandom(seed * 41) * 1.5}s`,
+    left: `${10 + seededRandom(seed * 43) * 80}%`,
+    bottom: "-20px",
+  };
+});
+
+function formatDate(dateStr) {
+  const d = parseLocalDate(dateStr);
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 주간`;
 }
 
 function parseStoredBoolean(value, fallback) {
@@ -57,8 +65,8 @@ function splitWithBreaks(text) {
   return text.split(/<br\s*\/?>(\n)?/gi).filter((chunk) => chunk !== undefined);
 }
 
-function getWeekDays(dateStr) {
-  const d = new Date(dateStr);
+function getWeekDays(dateValue) {
+  const d = parseLocalDate(dateValue);
   const day = d.getDay();
   // We want Sunday (0) to Saturday (6)
   const sunday = new Date(d);
@@ -70,7 +78,7 @@ function getWeekDays(dateStr) {
     const nextDay = new Date(sunday);
     nextDay.setDate(sunday.getDate() + i);
     days.push({
-      date: nextDay.toISOString().split('T')[0],
+      date: formatLocalDate(nextDay),
       name: dayNames[i]
     });
   }
@@ -79,8 +87,8 @@ function getWeekDays(dateStr) {
 
 function calculateMissedDays(startDateStr, endDateStr) {
   if (!startDateStr || !endDateStr) return 0;
-  const start = new Date(startDateStr);
-  const end = new Date(endDateStr);
+  const start = parseLocalDate(startDateStr);
+  const end = parseLocalDate(endDateStr);
   start.setHours(0, 0, 0, 0);
   end.setHours(0, 0, 0, 0);
   const diffTime = end.getTime() - start.getTime();
@@ -102,14 +110,13 @@ function Main() {
   const [count, setCount] = useState(0);
   const [streak, setStreak] = useState(0);
   const [graceCards, setGraceCards] = useState(0);
-  const [total100sCount, setTotal100sCount] = useState(0);
+  const [, setTotal100sCount] = useState(0);
   const [streakHistory, setStreakHistory] = useState({});
   const [showDashboard, setShowDashboard] = useState(false);
   const [isKorean, setIsKorean] = useState(true);
   const [hidePart1, setHidePart1] = useState(false);
   const [hidePart2, setHidePart2] = useState(false);
   const [verseFontSize, setVerseFontSize] = useState(defaultFontSize);
-  const [titleBadge, setTitleBadge] = useState(titles[0]);
   const [leavesActive, setLeavesActive] = useState(false);
   const [starlightActive, setStarlightActive] = useState(false);
   const [globalCount, setGlobalCount] = useState(0);
@@ -126,15 +133,11 @@ function Main() {
   const todayText = `${formatDate(currentDisplaySunday)} (${todayFormatted})`;
 
   const handlePrevWeek = () => {
-    const d = new Date(currentDisplaySunday);
-    d.setDate(d.getDate() - 7);
-    setCurrentDisplaySunday(d.toISOString().split('T')[0]);
+    setCurrentDisplaySunday(addDays(currentDisplaySunday, -7));
   };
 
   const handleNextWeek = () => {
-    const d = new Date(currentDisplaySunday);
-    d.setDate(d.getDate() + 7);
-    setCurrentDisplaySunday(d.toISOString().split('T')[0]);
+    setCurrentDisplaySunday(addDays(currentDisplaySunday, 7));
   };
 
   const loadData = useCallback(async () => {
@@ -177,8 +180,8 @@ function Main() {
   }, [fetchGlobalCount]);
 
   useEffect(() => {
-    const todayDateOnly = new Date().toISOString().split('T')[0];
-    const yesterdayDateOnly = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const todayDateOnly = formatLocalDate(new Date());
+    const yesterdayDateOnly = addDays(new Date(), -1);
 
     const savedDate = localStorage.getItem("savedDate");
     const storedCount = parseStoredNumber(localStorage.getItem("counter"), 0);
@@ -190,7 +193,9 @@ function Main() {
     let storedStreakHistory = {};
     try {
       storedStreakHistory = JSON.parse(localStorage.getItem("streakHistory")) || {};
-    } catch { }
+    } catch {
+      storedStreakHistory = {};
+    }
 
     // Automatic Sunday Grace Card Granting
     if (new Date().getDay() === 0) { // 0 is Sunday
@@ -214,10 +219,10 @@ function Main() {
           storedGraceCards -= missedDays;
           localStorage.setItem("graceCards", String(storedGraceCards));
 
-          let loopDate = new Date(lastActiveDate);
+          let loopDate = parseLocalDate(lastActiveDate);
           for (let i = 0; i < missedDays; i++) {
             loopDate.setDate(loopDate.getDate() + 1);
-            const missedDateStr = loopDate.toISOString().split('T')[0];
+            const missedDateStr = formatLocalDate(loopDate);
             storedStreakHistory[missedDateStr] = true;
           }
           localStorage.setItem("streakHistory", JSON.stringify(storedStreakHistory));
@@ -300,7 +305,7 @@ function Main() {
 
       // If hitting 100 for the first time today, increment streak and manage 100s
       if (next === 100) {
-        const todayDateOnly = new Date().toISOString().split('T')[0];
+        const todayDateOnly = formatLocalDate(new Date());
         const lastDate = localStorage.getItem("lastActiveDate");
 
         if (lastDate !== todayDateOnly) {
@@ -368,7 +373,7 @@ function Main() {
         await navigator.share({
           text: textToShare,
         });
-      } catch (err) {
+      } catch {
         // user cancelled or share failed silently
       }
     } else {
@@ -376,13 +381,13 @@ function Main() {
       try {
         await navigator.clipboard.writeText(textToShare);
         alert("클립보드에 복사되었습니다!");
-      } catch (err) {
+      } catch {
         alert("공유하기를 지원하지 않는 브라우저입니다.");
       }
     }
 
     // Publish increment to Global Share Counter
-    const todayDateOnly = new Date().toISOString().split('T')[0];
+    const todayDateOnly = formatLocalDate(new Date());
     const savedShareDate = localStorage.getItem("lastSharedCountDate");
     const baseline = savedShareDate === todayDateOnly ? lastSharedCount : 0;
 
@@ -411,8 +416,7 @@ function Main() {
   };
 
   const currentPlant = plantStages.find((s) => count >= s.threshold);
-  const weekDays = useMemo(() => getWeekDays(new Date().toISOString().split('T')[0]), []);
-  const badgeText = `${count}번 읊조렸습니다! [🔥 ${streak}일 연속 달성 중]`;
+  const weekDays = useMemo(() => getWeekDays(new Date()), []);
 
   const part1Lines = useMemo(
     () => splitWithBreaks(currentData?.part1),
@@ -577,17 +581,11 @@ function Main() {
       {/* 10-count falling leaves effect */}
       {leavesActive && (
         <div className="effect-container leaves-container">
-          {Array.from({ length: 12 }).map((_, i) => (
+          {leafParticles.map((style, i) => (
             <div
               key={i}
               className="leaf-particle"
-              style={{
-                left: `${Math.random() * 100}%`,
-                "--animationDelay": `${Math.random() * 1.5}s`,
-                "--animationDuration": `${2.5 + Math.random() * 2}s`,
-                fontSize: `${20 + Math.random() * 14}px`,
-                transform: `rotate(${Math.random() * 360}deg)`
-              }}
+              style={style}
             >
               🌿
             </div>
@@ -598,18 +596,11 @@ function Main() {
       {/* 100-count starlight effect */}
       {starlightActive && (
         <div className="effect-container starlight-container">
-          {Array.from({ length: 40 }).map((_, i) => (
+          {starlightParticles.map((style, i) => (
             <div
               key={i}
               className="starlight-particle"
-              style={{
-                "--driftX": `${(Math.random() - 0.5) * 150}px`,
-                "--riseY": `-${100 + Math.random() * 80}vh`,
-                "--duration": `${2.5 + Math.random() * 2}s`,
-                "--delay": `${Math.random() * 1.5}s`,
-                left: `${10 + Math.random() * 80}%`, // Stay mostly in bounds
-                bottom: "-20px"
-              }}
+              style={style}
             />
           ))}
         </div>
