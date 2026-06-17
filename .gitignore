@@ -8,3 +8,4 @@ react/dist/
 
 .DS_Store
 *.log
+.vercel
