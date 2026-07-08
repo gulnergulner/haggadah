@@ -26,28 +26,63 @@ app.use(express.json());
 // 정적 파일 서빙 (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, 'react/dist')));
 
-// Serve data.json dynamic without cache from Supabase
+function isValidDateString(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function formatWeeklyVerses(rows) {
+  const formattedData = {};
+  if (rows) {
+    rows.forEach(row => {
+      formattedData[row.date] = row.content;
+    });
+  }
+  return formattedData;
+}
+
+async function fetchWeeklyVerses(weekDate) {
+  let query = supabase
+    .from('weekly_verses')
+    .select('date, content');
+
+  if (weekDate) {
+    query = query.eq('date', weekDate);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return formatWeeklyVerses(data);
+}
+
+// Serve all verse data for admin and full-history browsing.
 app.get("/data.json", async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('weekly_verses')
-      .select('date, content');
-
-    if (error) throw error;
-
-    // Reconstruct the JSON object the frontend expects
-    const formattedData = {};
-    if (data) {
-      data.forEach(row => {
-        formattedData[row.date] = row.content;
-      });
-    }
+    const formattedData = await fetchWeeklyVerses();
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.json(formattedData);
   } catch (error) {
     console.error("Error fetching from Supabase:", error);
     res.status(500).json({ error: "Failed to read data from database" });
+  }
+});
+
+// Serve one week's verse data for the first public page load.
+app.get("/api/verse", async (req, res) => {
+  try {
+    const { weekDate } = req.query;
+
+    if (!isValidDateString(weekDate)) {
+      return res.status(400).json({ error: "Invalid weekDate. Expected YYYY-MM-DD." });
+    }
+
+    const formattedData = await fetchWeeklyVerses(weekDate);
+
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.json(formattedData);
+  } catch (error) {
+    console.error("Error fetching weekly verse from Supabase:", error);
+    res.status(500).json({ error: "Failed to read verse from database" });
   }
 });
 
@@ -168,10 +203,6 @@ app.post("/api/save-json", async (req, res) => {
 
 function readWeekDate(req) {
   return req.query.weekDate || req.params.weekDate;
-}
-
-function isValidDateString(value) {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
 // 1. Get the current global total for a specific week.

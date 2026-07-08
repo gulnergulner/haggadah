@@ -2,6 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { addDays, getRecentSunday } from "../utils/date";
 import "./Admin.css";
 
+const verseDataCacheKey = "verseData";
+const verseDataLoadedAllKey = "verseDataLoadedAll";
+
 function Admin() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [password, setPassword] = useState("");
@@ -16,15 +19,15 @@ function Admin() {
 
     const loadData = useCallback(async () => {
         try {
-            const cached = localStorage.getItem("verseData");
-            let dataToSet = {};
-            if (cached) {
-                dataToSet = JSON.parse(cached);
-            } else {
-                const response = await fetch("/data.json");
-                if (response.ok) {
-                    dataToSet = await response.json();
-                }
+            const cached = localStorage.getItem(verseDataCacheKey);
+            const hasFullCache = localStorage.getItem(verseDataLoadedAllKey) === "true";
+            let dataToSet = cached && hasFullCache ? JSON.parse(cached) : {};
+
+            const response = await fetch("/data.json");
+            if (response.ok) {
+                dataToSet = await response.json();
+                localStorage.setItem(verseDataCacheKey, JSON.stringify(dataToSet));
+                localStorage.setItem(verseDataLoadedAllKey, "true");
             }
 
             // Migration from legacy data format to date-keyed format
@@ -111,7 +114,8 @@ function Admin() {
         const updatedData = { ...verseData };
 
         // Clear local storage cache so it forces a fetch everywhere
-        localStorage.removeItem("verseData");
+        localStorage.removeItem(verseDataCacheKey);
+        localStorage.removeItem(verseDataLoadedAllKey);
 
         // Show success message
         setSuccessMsg("✓ 저장 중...");

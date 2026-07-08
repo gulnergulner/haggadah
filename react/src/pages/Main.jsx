@@ -3,6 +3,8 @@ import { addDays, formatLocalDate, getRecentSunday, parseLocalDate } from "../ut
 import "./Main.css";
 
 const dataUrl = "/data.json";
+const verseDataCacheKey = "verseData";
+const verseDataLoadedAllKey = "verseDataLoadedAll";
 const defaultFontSize = 20;
 const minFontSize = 12;
 
@@ -65,6 +67,34 @@ function splitWithBreaks(text) {
   return text.split(/<br\s*\/?>(\n)?/gi).filter((chunk) => chunk !== undefined);
 }
 
+function normalizeVerseData(data, fallbackSunday) {
+  if (!data || typeof data !== "object") return {};
+  if (data.ko || data.en) {
+    return { [fallbackSunday]: data };
+  }
+  return data;
+}
+
+function readCachedVerseData(fallbackSunday) {
+  const cached = localStorage.getItem(verseDataCacheKey);
+  if (!cached) return {};
+
+  try {
+    return normalizeVerseData(JSON.parse(cached), fallbackSunday);
+  } catch {
+    localStorage.removeItem(verseDataCacheKey);
+    localStorage.removeItem(verseDataLoadedAllKey);
+    return {};
+  }
+}
+
+function writeCachedVerseData(data, loadedAll = false) {
+  localStorage.setItem(verseDataCacheKey, JSON.stringify(data));
+  if (loadedAll) {
+    localStorage.setItem(verseDataLoadedAllKey, "true");
+  }
+}
+
 function getWeekDays(dateValue) {
   const d = parseLocalDate(dateValue);
   const day = d.getDay();
@@ -97,15 +127,7 @@ function calculateMissedDays(startDateStr, endDateStr) {
 
 function Main() {
   const [verseData, setVerseData] = useState(() => {
-    const cached = localStorage.getItem("verseData");
-    if (cached) {
-      try {
-        return JSON.parse(cached);
-      } catch {
-        localStorage.removeItem("verseData");
-      }
-    }
-    return null;
+    return readCachedVerseData(getRecentSunday(new Date()));
   });
   const [count, setCount] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -122,10 +144,13 @@ function Main() {
   const [globalCount, setGlobalCount] = useState(0);
   const [lastSharedCount, setLastSharedCount] = useState(0);
   const [currentDisplaySunday, setCurrentDisplaySunday] = useState(() => getRecentSunday(new Date()));
+  const [hasLoadedAllVerseData, setHasLoadedAllVerseData] = useState(
+    () => localStorage.getItem(verseDataLoadedAllKey) === "true",
+  );
 
   const currentLang = isKorean ? "ko" : "en";
-  // Fallback to legacy root format if it exists, otherwise use keyed data
-  const weekData = verseData?.[currentDisplaySunday] || (verseData?.ko ? verseData : null);
+  const currentWeekSunday = getRecentSunday(new Date());
+  const weekData = verseData[currentDisplaySunday] || null;
   const currentData = weekData?.[currentLang] || weekData?.ko || null;
 
   const todayDateObj = new Date();
@@ -140,28 +165,71 @@ function Main() {
     setCurrentDisplaySunday(addDays(currentDisplaySunday, 7));
   };
 
-  const loadData = useCallback(async () => {
+  const mergeVerseData = useCallback((data, loadedAll = false) => {
+    const normalized = normalizeVerseData(data, currentWeekSunday);
+
+    if (loadedAll) {
+      localStorage.setItem(verseDataLoadedAllKey, "true");
+    }
+
+    setVerseData((prevData) => {
+      const nextData = { ...prevData, ...normalized };
+      if (JSON.stringify(prevData) === JSON.stringify(nextData)) {
+        return prevData;
+      }
+      writeCachedVerseData(nextData, loadedAll);
+      return nextData;
+    });
+
+    if (loadedAll) {
+      setHasLoadedAllVerseData(true);
+    }
+  }, [currentWeekSunday]);
+
+  const fetchSingleWeek = useCallback(async (weekDate) => {
     try {
-      // Add a cache buster based on the ACTUAL current week's Sunday date.
-      // This ensures we fetch fresh data only once per week, and rely on browser cache otherwise.
-      const timestamp = getRecentSunday(new Date());
-      const response = await fetch(`${dataUrl}?t=${timestamp}`);
+      const params = new URLSearchParams({ weekDate });
+      const response = await fetch(`/api/verse?${params}`);
       if (response.ok) {
         const json = await response.json();
-        localStorage.setItem("verseData", JSON.stringify(json));
-
-        // Prevent unnecessary re-renders if the data hasn't actually changed
-        setVerseData((prevData) => {
-          if (JSON.stringify(prevData) === JSON.stringify(json)) {
-            return prevData;
-          }
-          return json;
-        });
+        mergeVerseData(json);
       }
     } catch {
       // ignore network errors, we already have the cached data rendered
     }
-  }, []);
+  }, [mergeVerseData]);
+
+  const fetchAllWeeks = useCallback(async () => {
+    try {
+      const response = await fetch(dataUrl);
+      if (response.ok) {
+        const json = await response.json();
+        mergeVerseData(json, true);
+      }
+    } catch {
+      // ignore network errors, we already have the cached data rendered
+    }
+  }, [mergeVerseData]);
+
+  const ensureVerseData = useCallback(() => {
+    if (verseData[currentDisplaySunday]) return;
+
+    if (currentDisplaySunday < currentWeekSunday) {
+      if (!hasLoadedAllVerseData) {
+        fetchAllWeeks();
+      }
+      return;
+    }
+
+    fetchSingleWeek(currentDisplaySunday);
+  }, [
+    currentDisplaySunday,
+    currentWeekSunday,
+    fetchAllWeeks,
+    fetchSingleWeek,
+    hasLoadedAllVerseData,
+    verseData,
+  ]);
 
   const fetchGlobalCount = useCallback(async () => {
     try {
@@ -260,8 +328,11 @@ function Main() {
       parseStoredNumber(localStorage.getItem("verseFontSize"), defaultFontSize),
     );
 
-    loadData();
-  }, [loadData]);
+  }, []);
+
+  useEffect(() => {
+    ensureVerseData();
+  }, [ensureVerseData]);
 
   const handleToggleLanguage = () => {
     setIsKorean((prev) => {
