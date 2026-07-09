@@ -67,6 +67,16 @@ function splitWithBreaks(text) {
   return text.split(/<br\s*\/?>(\n)?/gi).filter((chunk) => chunk !== undefined);
 }
 
+function getVerseBody(data) {
+  if (!data) return "";
+  if (typeof data.body === "string") return data.body;
+  if (typeof data.text === "string") return data.text;
+
+  return [data.part1, data.part2]
+    .filter((part) => typeof part === "string" && part.trim())
+    .join("<br/>");
+}
+
 function normalizeVerseData(data, fallbackSunday) {
   if (!data || typeof data !== "object") return {};
   if (data.ko || data.en) {
@@ -136,8 +146,6 @@ function Main() {
   const [streakHistory, setStreakHistory] = useState({});
   const [showDashboard, setShowDashboard] = useState(false);
   const [isKorean, setIsKorean] = useState(true);
-  const [hidePart1, setHidePart1] = useState(false);
-  const [hidePart2, setHidePart2] = useState(false);
   const [verseFontSize, setVerseFontSize] = useState(defaultFontSize);
   const [leavesActive, setLeavesActive] = useState(false);
   const [starlightActive, setStarlightActive] = useState(false);
@@ -322,8 +330,6 @@ function Main() {
     setStreakHistory(storedStreakHistory);
     setLastSharedCount(parseStoredNumber(localStorage.getItem("lastSharedCount"), 0));
     setIsKorean(parseStoredBoolean(localStorage.getItem("isKorean"), true));
-    setHidePart1(parseStoredBoolean(localStorage.getItem("hidePart1"), false));
-    setHidePart2(parseStoredBoolean(localStorage.getItem("hidePart2"), false));
     setVerseFontSize(
       parseStoredNumber(localStorage.getItem("verseFontSize"), defaultFontSize),
     );
@@ -338,22 +344,6 @@ function Main() {
     setIsKorean((prev) => {
       const next = !prev;
       localStorage.setItem("isKorean", String(next));
-      return next;
-    });
-  };
-
-  const handleTogglePart1 = () => {
-    setHidePart1((prev) => {
-      const next = !prev;
-      localStorage.setItem("hidePart1", String(next));
-      return next;
-    });
-  };
-
-  const handleTogglePart2 = () => {
-    setHidePart2((prev) => {
-      const next = !prev;
-      localStorage.setItem("hidePart2", String(next));
       return next;
     });
   };
@@ -490,14 +480,9 @@ function Main() {
   const currentPlant = plantStages.find((s) => count >= s.threshold);
   const weekDays = useMemo(() => getWeekDays(new Date()), []);
 
-  const part1Lines = useMemo(
-    () => splitWithBreaks(currentData?.part1),
-    [currentData?.part1],
-  );
-
-  const part2Lines = useMemo(
-    () => splitWithBreaks(currentData?.part2),
-    [currentData?.part2],
+  const verseLines = useMemo(
+    () => splitWithBreaks(getVerseBody(currentData)),
+    [currentData],
   );
 
   return (
@@ -547,22 +532,11 @@ function Main() {
             {currentData ? (currentData.title || "") : "이 주간 등록된 말씀이 없습니다."}
           </div>
           <div
-            className={`verse-part ${hidePart1 ? "hidden" : ""}`}
+            className="verse-body"
             style={{ fontSize: `${verseFontSize}px` }}
           >
-            {part1Lines.map((line, index) => (
-              <span key={`p1-${index}`}>
-                {line}
-                <br />
-              </span>
-            ))}
-          </div>
-          <div
-            className={`verse-part ${hidePart2 ? "hidden" : ""}`}
-            style={{ fontSize: `${verseFontSize}px` }}
-          >
-            {part2Lines.map((line, index) => (
-              <span key={`p2-${index}`}>
+            {verseLines.map((line, index) => (
+              <span key={`verse-${index}`}>
                 {line}
                 <br />
               </span>
@@ -632,12 +606,6 @@ function Main() {
           </button>
           <button className="btn toggle" onClick={handleToggleLanguage}>
             {isKorean ? "English" : "한국어"}
-          </button>
-          <button className="btn hide" onClick={handleTogglePart1}>
-            {hidePart1 ? "SHOW1" : "HIDE1"}
-          </button>
-          <button className="btn hide" onClick={handleTogglePart2}>
-            {hidePart2 ? "SHOW2" : "HIDE2"}
           </button>
           <button className="btn share" style={{ background: "linear-gradient(to bottom, #9c27b0, #7b1fa2)" }} onClick={handleShare}>
             {isKorean ? "공유" : "Share"}

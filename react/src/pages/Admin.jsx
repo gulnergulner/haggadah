@@ -5,6 +5,34 @@ import "./Admin.css";
 const verseDataCacheKey = "verseData";
 const verseDataLoadedAllKey = "verseDataLoadedAll";
 
+function createEmptyLanguageVerse() {
+    return { title: "", part1: "", part2: "" };
+}
+
+function createEmptyWeekVerse() {
+    return {
+        ko: createEmptyLanguageVerse(),
+        en: createEmptyLanguageVerse(),
+    };
+}
+
+function normalizeWeekVerse(weekVerse) {
+    return {
+        ko: { ...createEmptyLanguageVerse(), ...(weekVerse?.ko || {}) },
+        en: { ...createEmptyLanguageVerse(), ...(weekVerse?.en || {}) },
+    };
+}
+
+function getVerseBody(data) {
+    if (!data) return "";
+    if (typeof data.body === "string") return data.body;
+    if (typeof data.text === "string") return data.text;
+
+    return [data.part1, data.part2]
+        .filter((part) => typeof part === "string" && part.trim())
+        .join("<br/>");
+}
+
 function Admin() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [password, setPassword] = useState("");
@@ -80,18 +108,20 @@ function Admin() {
         }
 
         setVerseData((prev) => {
-            const currentWk = prev[selectedSunday] || {
-                ko: { title: "", part1: "", part2: "" },
-                en: { title: "", part1: "", part2: "" }
-            };
+            const currentWk = normalizeWeekVerse(prev[selectedSunday] || createEmptyWeekVerse());
+            const currentLangData = { ...currentWk[lang] };
+            delete currentLangData.body;
+            delete currentLangData.text;
+
+            const nextLangData = field === "body"
+                ? { ...currentLangData, part1: value, part2: "" }
+                : { ...currentWk[lang], [field]: finalValue };
+
             return {
                 ...prev,
                 [selectedSunday]: {
                     ...currentWk,
-                    [lang]: {
-                        ...currentWk[lang],
-                        [field]: finalValue,
-                    }
+                    [lang]: nextLangData
                 }
             };
         });
@@ -105,10 +135,7 @@ function Admin() {
         setSelectedSunday(addDays(selectedSunday, 7));
     };
 
-    const currentVerse = verseData[selectedSunday] || {
-        ko: { title: "", part1: "", part2: "" },
-        en: { title: "", part1: "", part2: "" }
-    };
+    const currentVerse = normalizeWeekVerse(verseData[selectedSunday]);
 
     const handleSave = async () => {
         const updatedData = { ...verseData };
@@ -258,18 +285,10 @@ function Admin() {
                         />
                     </div>
                     <div className="form-group">
-                        <h3>파트 1 (Part 1):</h3>
+                        <h3>문구:</h3>
                         <textarea
-                            value={currentVerse.ko.part1}
-                            onChange={(e) => handleChange("ko", "part1", e.target.value)}
-                            placeholder="<br/>로 줄바꿈을 표시하세요"
-                        />
-                    </div>
-                    <div className="form-group">
-                        <h3>파트 2 (Part 2):</h3>
-                        <textarea
-                            value={currentVerse.ko.part2}
-                            onChange={(e) => handleChange("ko", "part2", e.target.value)}
+                            value={getVerseBody(currentVerse.ko)}
+                            onChange={(e) => handleChange("ko", "body", e.target.value)}
                             placeholder="<br/>로 줄바꿈을 표시하세요"
                         />
                     </div>
@@ -298,18 +317,10 @@ function Admin() {
                         />
                     </div>
                     <div className="form-group">
-                        <h3>Part 1:</h3>
+                        <h3>Text:</h3>
                         <textarea
-                            value={currentVerse.en.part1}
-                            onChange={(e) => handleChange("en", "part1", e.target.value)}
-                            placeholder="Use <br/> for line breaks"
-                        />
-                    </div>
-                    <div className="form-group">
-                        <h3>Part 2:</h3>
-                        <textarea
-                            value={currentVerse.en.part2}
-                            onChange={(e) => handleChange("en", "part2", e.target.value)}
+                            value={getVerseBody(currentVerse.en)}
+                            onChange={(e) => handleChange("en", "body", e.target.value)}
                             placeholder="Use <br/> for line breaks"
                         />
                     </div>
