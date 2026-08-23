@@ -1,0 +1,47 @@
+:root {
+  --bg: #faf7f1;
+  --surface: #ffffff;
+  --ink: #33302a;
+  --ink-soft: #8a8378;
+  --accent: #6d5bd0;
+  --accent-deep: #5b49c0;
+  --accent-soft: #ece8fb;
+  --gold: #d9a441;
+  --line: #e8e2d6;
+  --shadow: 0 2px 12px rgba(80, 70, 50, 0.08);
+  --serif: 'Noto Serif KR', Georgia, 'Apple SD Gothic Neo', serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
+    'Malgun Gothic', 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+/* display를 지정한 요소(.done-overlay 등)에서도 hidden 속성이 항상 이기도록 */
+[hidden] {
+  display: none !important;
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
