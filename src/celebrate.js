@@ -1,47 +1,28 @@
-const MILESTONES = [25, 50, 75, 100]
+// 기존 haggadah.html의 축하 효과 재현: 불꽃놀이 / 배경 플래시 / 풍선
 
-const MESSAGES = {
-  25: '좋은 출발이에요! 25번 💪',
-  50: '절반 왔어요! 🔥',
-  75: '조금만 더! 75번 ✨',
-  100: '오늘의 하가다 완료! 🎉',
+export function triggerFirework() {
+  const firework = document.createElement('div')
+  firework.classList.add('firework')
+  firework.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`
+  document.body.appendChild(firework)
+  setTimeout(() => firework.remove(), 1000)
 }
 
-// canvas-confetti는 첫 마일스톤 때 지연 로드 (초기 번들 0바이트)
-let confettiPromise = null
-function getConfetti() {
-  confettiPromise ||= import('canvas-confetti').then((m) => m.default)
-  return confettiPromise
+export function flashBackground() {
+  document.body.classList.add('background-flash')
+  setTimeout(() => document.body.classList.remove('background-flash'), 3000)
 }
 
-// prev < m && next >= m 전환일 때만 발동 → 새로고침해도 재발동 없음
-export function checkMilestone(prev, next) {
-  return MILESTONES.find((m) => prev < m && next >= m) || null
-}
-
-export async function celebrate(milestone) {
-  showToast(MESSAGES[milestone])
-  try {
-    const confetti = await getConfetti()
-    if (milestone === 100) {
-      confetti({ particleCount: 120, spread: 100, origin: { y: 0.6 } })
-      setTimeout(() => confetti({ particleCount: 80, angle: 60, spread: 70, origin: { x: 0, y: 0.7 } }), 250)
-      setTimeout(() => confetti({ particleCount: 80, angle: 120, spread: 70, origin: { x: 1, y: 0.7 } }), 500)
-    } else {
-      confetti({ particleCount: 40 + milestone, spread: 75, origin: { y: 0.72 } })
-    }
-  } catch { /* 오프라인 등으로 로드 실패 시 토스트만 표시 */ }
-}
-
-let toastTimer = null
-export function showToast(message, ms = 2200) {
-  const el = document.getElementById('toast')
-  if (!el) return
-  el.textContent = message
-  el.hidden = false
-  el.classList.remove('toast-in')
-  void el.offsetWidth // 애니메이션 재시작
-  el.classList.add('toast-in')
-  clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => { el.hidden = true }, ms)
+export function releaseBalloons() {
+  const colors = ['red', 'blue', 'green', 'yellow', 'purple']
+  for (let i = 0; i < 10; i++) {
+    setTimeout(() => {
+      const balloon = document.createElement('div')
+      balloon.classList.add('balloon')
+      balloon.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]
+      balloon.style.left = `${Math.random() * 100}vw`
+      document.body.appendChild(balloon)
+      setTimeout(() => balloon.remove(), 5000)
+    }, i * 300)
+  }
 }

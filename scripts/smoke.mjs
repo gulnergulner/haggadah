@@ -1,5 +1,5 @@
 // 로컬 스모크 테스트: 설치된 Edge를 headless로 띄워 성도 페이지를 모바일
-// 뷰포트로 열고 카운터 탭/마일스톤/localStorage 유지 여부를 확인한다.
+// 뷰포트로 열고 +1 버튼/칭호/localStorage 유지 여부를 확인한다.
 // 사용: node scripts/smoke.mjs  (사전에 vite preview가 4173 포트에 떠 있어야 함)
 import { chromium } from 'playwright-core'
 
@@ -17,36 +17,36 @@ const page = await ctx.newPage()
 page.on('console', (msg) => { if (msg.type() === 'error') errors.push(msg.text()) })
 page.on('pageerror', (err) => errors.push(String(err)))
 
-await page.goto(BASE + '/', { waitUntil: 'networkidle' })
+await page.goto(BASE + '/', { waitUntil: 'load' }); await page.waitForTimeout(1200)
 await page.screenshot({ path: 'scripts/shot-initial.png' })
 
-const title = await page.locator('#verse-title').textContent()
-console.log('제목 표시:', JSON.stringify(title))
+console.log('날짜 표시:', JSON.stringify(await page.locator('#date').textContent()))
+console.log('말씀 본문:', JSON.stringify(await page.locator('#verse-body').textContent()))
 
-// 26번 탭 → 25 마일스톤 토스트 + 카운트 26
-const tap = page.locator('#tap-zone')
-for (let i = 0; i < 26; i++) await tap.tap()
+// 21번 탭 → 카운트 21 + 칭호가 '말씀 지킴이'로 바뀌는지
+const plusOne = page.locator('#btn-increase')
+for (let i = 0; i < 21; i++) await plusOne.tap()
 await page.waitForTimeout(400)
-const count = await page.locator('#count-num').textContent()
-console.log('26회 탭 후 카운트:', count)
-const toastVisible = await page.locator('#toast').isVisible()
-const toastText = toastVisible ? await page.locator('#toast').textContent() : '(숨김)'
-console.log('토스트:', toastText)
+console.log('21회 탭 후 카운트:', await page.locator('#counter').textContent())
+console.log('칭호:', await page.locator('#title-badge').textContent())
 await page.screenshot({ path: 'scripts/shot-after-taps.png' })
 
 // 새로고침 후 카운트 유지 확인
-await page.reload({ waitUntil: 'networkidle' })
-const countAfterReload = await page.locator('#count-num').textContent()
-console.log('새로고침 후 카운트:', countAfterReload)
+await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(1200)
+console.log('새로고침 후 카운트:', await page.locator('#counter').textContent())
 
-// -1 버튼
-await page.locator('#btn-minus').tap()
-console.log('-1 후 카운트:', await page.locator('#count-num').textContent())
+// 언어 전환 → 버튼 라벨 변경 확인
+await page.locator('#btn-lang').tap()
+console.log('전환 후 언어 버튼:', await page.locator('#btn-lang').textContent())
+console.log('전환 후 리셋 버튼:', await page.locator('#btn-reset').textContent())
+await page.locator('#btn-lang').tap()
 
-// 관리자 페이지 로드 (설정 경고 표시 확인)
-await page.goto(BASE + '/admin.html', { waitUntil: 'networkidle' })
-const warnVisible = await page.locator('#config-warning').isVisible()
-console.log('관리자: 설정 경고 표시 =', warnVisible)
+// 리셋 버튼
+await page.locator('#btn-reset').tap()
+console.log('리셋 후 카운트:', await page.locator('#counter').textContent())
+
+// 관리자 페이지 로드
+await page.goto(BASE + '/admin.html', { waitUntil: 'load' }); await page.waitForTimeout(1200)
 await page.screenshot({ path: 'scripts/shot-admin.png' })
 
 console.log('콘솔 에러:', errors.length ? errors : '없음')

@@ -54,7 +54,7 @@ npm run dev -- --host   # 같은 Wi-Fi의 폰에서 접속해 터치/진동 테�
 ## 데이터 구조
 
 Firestore 컬렉션 `haggadot`, 문서 ID = 게시일 `YYYY-MM-DD`:
-`titleKo / titleEn / reference / referenceEn / bodyKo / bodyEn / publishedAt / updatedAt`
+`reference / referenceEn / bodyKo / bodyEn / publishedAt / updatedAt`
 
 - 성도 화면은 최신 1건만 읽으며(`orderBy publishedAt desc, limit 1`), 30분 localStorage 캐시로 반복 접속 시 Firestore 읽기를 생략한다 (무료 한도 보호 + 오프라인 동작).
 - 쓰기는 `firestore.rules`에 하드코딩된 관리자 UID만 가능. 관리자가 여러 명이면 rules의 배열에 UID를 추가하고 rules를 재배포.

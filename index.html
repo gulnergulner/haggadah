@@ -2,65 +2,49 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#faf7f1" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
   <meta name="description" content="매주 말씀을 읊조리며 횟수를 세는 하가다 페이지" />
-  <title>하가다 — 말씀 읊조리기</title>
+  <title>새가나안교회 하가다</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet" />
 </head>
 <body>
-  <div id="app">
-    <header class="topbar">
-      <span id="verse-ref" class="verse-ref"></span>
-      <div class="topbar-actions">
-        <button id="btn-lang" class="chip" type="button">English</button>
-        <button id="btn-wake" class="chip" type="button" hidden aria-pressed="false"
-                title="화면 꺼짐 방지">☀️</button>
-      </div>
-    </header>
-
-    <main id="verse-scroll" class="verse-scroll">
-      <h1 id="verse-title" class="verse-title"></h1>
-      <p id="verse-body" class="verse-body"></p>
-    </main>
-
-    <section class="counter-panel">
-      <div class="ring-wrap" id="ring-wrap">
-        <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
-          <circle class="ring-track" cx="60" cy="60" r="54" />
-          <circle id="ring-bar" class="ring-bar" cx="60" cy="60" r="54" />
-        </svg>
-        <div class="ring-center">
-          <span id="count-num" class="count-num">0</span>
-          <span class="count-goal">/ 100</span>
-        </div>
-      </div>
-
-      <button id="tap-zone" class="tap-zone" type="button">
-        <span class="tap-label">🙏 탭하여 읊조리기</span>
-      </button>
-
-      <div class="counter-tools">
-        <button id="btn-minus" class="tool-btn" type="button">−1</button>
-        <a class="admin-link" href="/admin.html">관리자</a>
-        <button id="btn-reset" class="tool-btn" type="button">리셋</button>
-      </div>
-    </section>
-
-    <div id="toast" class="toast" hidden></div>
-
-    <div id="done-overlay" class="done-overlay" hidden>
-      <div class="done-card">
-        <div class="done-emoji">🎉</div>
-        <h2>오늘의 하가다 완료!</h2>
-        <p>오늘 100번을 모두 읊조렸어요.<br />내일도 함께해요 🙏</p>
-        <button id="btn-done-close" class="done-btn" type="button">계속 읊조리기</button>
-      </div>
+  <!-- 날짜 + 칭호 + 글자 크기 조절 -->
+  <div id="date-container">
+    <div class="date-center">
+      <h2 id="date"></h2>
+      <span id="title-badge"></span>
+    </div>
+    <div class="font-controls">
+      <button id="font-decrease" class="font-size-btn" type="button">-</button>
+      <button id="font-increase" class="font-size-btn" type="button">+</button>
     </div>
   </div>
+
+  <!-- 말씀 영역 -->
+  <div id="verse-container">
+    <div id="verse">
+      <strong id="verse-ref" class="verse-title"></strong>
+      <div id="verse-body"></div>
+    </div>
+  </div>
+
+  <!-- 버튼 및 카운터 영역 -->
+  <div class="button-container">
+    <div id="counter">0</div>
+    <div class="button-row">
+      <button id="btn-reset" class="reset" type="button">리셋</button>
+      <button id="btn-lang" class="toggle-lang" type="button">영문</button>
+    </div>
+    <div class="button-row">
+      <button id="btn-increase" class="increase" type="button">+1</button>
+    </div>
+  </div>
+
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

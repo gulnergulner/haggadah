@@ -16,10 +16,8 @@ const $ = (id) => document.getElementById(id)
 const views = { login: $('login-view'), editor: $('editor-view') }
 const fields = {
   date: $('f-date'),
-  titleKo: $('f-title-ko'),
   reference: $('f-reference'),
   bodyKo: $('f-body-ko'),
-  titleEn: $('f-title-en'),
   referenceEn: $('f-reference-en'),
   bodyEn: $('f-body-en'),
 }
@@ -65,10 +63,8 @@ fields.date.value = nearestSunday()
 
 function readForm() {
   return {
-    titleKo: fields.titleKo.value.trim(),
     reference: fields.reference.value.trim(),
     bodyKo: fields.bodyKo.value.trim(),
-    titleEn: fields.titleEn.value.trim(),
     referenceEn: fields.referenceEn.value.trim(),
     bodyEn: fields.bodyEn.value.trim(),
   }
@@ -107,7 +103,6 @@ function renderPreview() {
   const v = readForm()
   const en = previewLang === 'en'
   $('pv-reference').textContent = en ? v.referenceEn : v.reference
-  $('pv-title').textContent = en ? v.titleEn : v.titleKo
   $('pv-body').textContent = en ? v.bodyEn : v.bodyKo
   $('pv-ko').classList.toggle('active', !en)
   $('pv-en').classList.toggle('active', en)
@@ -139,13 +134,11 @@ async function refreshList() {
       const loadBtn = document.createElement('button')
       loadBtn.type = 'button'
       loadBtn.className = 'verse-item'
-      loadBtn.textContent = `${docSnap.id} · ${data.reference} — ${data.titleKo}`
+      loadBtn.textContent = `${docSnap.id} · ${data.reference}`
       loadBtn.addEventListener('click', () => {
         fields.date.value = docSnap.id
-        fields.titleKo.value = data.titleKo || ''
         fields.reference.value = data.reference || ''
         fields.bodyKo.value = data.bodyKo || ''
-        fields.titleEn.value = data.titleEn || ''
         fields.referenceEn.value = data.referenceEn || ''
         fields.bodyEn.value = data.bodyEn || ''
         window.scrollTo({ top: 0, behavior: 'smooth' })

@@ -2,57 +2,74 @@ import './styles/base.css'
 import './styles/main.css'
 import { createCounter } from './counter.js'
 import { cachedVerse, cacheIsFresh, fetchLatest } from './verse.js'
-import { checkMilestone, celebrate } from './celebrate.js'
+import { triggerFirework, flashBackground, releaseBalloons } from './celebrate.js'
 import * as wakelock from './wakelock.js'
 
-const GOAL = 100
-const CIRC = 2 * Math.PI * 54 // ring r=54
+// 20회 단위 칭호 (기존 haggadah.html과 동일)
+const TITLES = [
+  '🌱 새싹', // 1~19번
+  '⭐ 말씀 지킴이', // 20~39번
+  '🔥 신앙의 불꽃', // 40~59번
+  '💎 믿음의 보석', // 60~79번
+  '🌟 빛의 증인', // 80~99번
+  '🏆 말씀의 챔피언', // 100번 이상
+]
 
 const $ = (id) => document.getElementById(id)
 const els = {
+  date: $('date'),
+  badge: $('title-badge'),
   ref: $('verse-ref'),
-  title: $('verse-title'),
   body: $('verse-body'),
-  scroll: $('verse-scroll'),
-  ringWrap: $('ring-wrap'),
-  ringBar: $('ring-bar'),
-  countNum: $('count-num'),
-  tapZone: $('tap-zone'),
-  btnMinus: $('btn-minus'),
+  counter: $('counter'),
   btnReset: $('btn-reset'),
   btnLang: $('btn-lang'),
-  btnWake: $('btn-wake'),
-  doneOverlay: $('done-overlay'),
-  btnDoneClose: $('btn-done-close'),
+  btnIncrease: $('btn-increase'),
+  fontDecrease: $('font-decrease'),
+  fontIncrease: $('font-increase'),
 }
 
 const counter = createCounter()
 let verse = cachedVerse()
 
+// ---------- 날짜 ----------
+function renderDate() {
+  const today = new Date()
+  els.date.innerText =
+    `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`
+}
+
+// ---------- 칭호 ----------
+function updateTitleBadge(count) {
+  let idx = Math.floor(count / 20)
+  if (idx >= TITLES.length) idx = TITLES.length - 1
+  els.badge.innerText = TITLES[idx]
+}
+
 // ---------- 말씀 렌더 ----------
 function renderVerse() {
   const lang = counter.getPref('lang')
-  els.btnLang.textContent = lang === 'ko' ? 'English' : '한글'
+  const ko = lang === 'ko'
+  els.btnLang.innerText = ko ? '영문' : 'Korean'
+  els.btnReset.innerText = ko ? '리셋' : 'Reset'
   if (!verse) {
-    els.ref.textContent = ''
-    els.title.textContent = '아직 게시된 말씀이 없습니다'
-    els.body.textContent = '관리자가 이번 주 하가다를 게시하면 이곳에 표시됩니다.'
+    els.ref.innerText = ''
+    els.body.innerText = ko
+      ? '아직 게시된 말씀이 없습니다.'
+      : 'No verse has been published yet.'
     return
   }
-  const en = lang === 'en' && verse.bodyEn
-  els.ref.textContent = (en ? verse.referenceEn : verse.reference) || ''
-  els.title.textContent = (en ? verse.titleEn : verse.titleKo) || ''
-  els.body.textContent = (en ? verse.bodyEn : verse.bodyKo) || ''
+  const en = !ko && verse.bodyEn
+  const ref = (en ? verse.referenceEn : verse.reference) || ''
+  els.ref.innerText = ref ? `📖${ref}` : ''
+  els.body.innerText = (en ? verse.bodyEn : verse.bodyKo) || ''
 }
 
+renderDate()
 renderVerse()
 if (!cacheIsFresh()) {
   fetchLatest().then((latest) => {
-    if (latest && latest.id !== verse?.id) {
-      verse = latest
-      renderVerse()
-      els.scroll.scrollTop = 0
-    } else if (latest) {
+    if (latest) {
       verse = latest
       renderVerse()
     }
@@ -64,98 +81,68 @@ els.btnLang.addEventListener('click', () => {
   renderVerse()
 })
 
-// ---------- 카운터 렌더 ----------
-function renderCount(n, pop = false) {
-  els.countNum.textContent = n
-  const pct = Math.min(n / GOAL, 1)
-  els.ringBar.style.strokeDashoffset = CIRC * (1 - pct)
-  els.ringWrap.classList.toggle('complete', n >= GOAL)
-  if (pop) {
-    els.countNum.classList.remove('pop')
-    void els.countNum.offsetWidth
-    els.countNum.classList.add('pop')
-  }
+// ---------- 글자 크기 조절 (기존과 동일하게 verseFontSize 키 사용) ----------
+const DEFAULT_FONT_SIZE = 20
+let verseFontSize =
+  parseInt(localStorage.getItem('verseFontSize'), 10) || DEFAULT_FONT_SIZE
+
+function applyFontSize() {
+  els.body.style.fontSize = `${verseFontSize}px`
+}
+
+els.fontIncrease.addEventListener('click', () => {
+  verseFontSize += 4
+  localStorage.setItem('verseFontSize', verseFontSize)
+  applyFontSize()
+})
+els.fontDecrease.addEventListener('click', () => {
+  verseFontSize = Math.max(12, verseFontSize - 4)
+  localStorage.setItem('verseFontSize', verseFontSize)
+  applyFontSize()
+})
+applyFontSize()
+
+// ---------- 카운터 ----------
+function renderCount(n) {
+  els.counter.innerText = n
+  updateTitleBadge(n)
 }
 
 renderCount(counter.get())
 
-// 자정 넘김: 다시 화면에 보일 때 오늘 카운트로 갱신
+// 자정 넘김: 다시 화면에 보일 때 오늘 날짜/카운트로 갱신
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') renderCount(counter.get())
+  if (document.visibilityState === 'visible') {
+    renderDate()
+    renderCount(counter.get())
+  }
 })
 
-// ---------- 탭(증가) ----------
-function spawnPlusOne(e) {
-  const rect = els.tapZone.getBoundingClientRect()
-  const span = document.createElement('span')
-  span.className = 'plus-one'
-  span.textContent = '+1'
-  const x = e.clientX ? e.clientX - rect.left : rect.width / 2
-  const y = e.clientY ? e.clientY - rect.top : rect.height / 2
-  span.style.left = `${x}px`
-  span.style.top = `${y}px`
-  els.tapZone.appendChild(span)
-  span.addEventListener('animationend', () => span.remove())
-}
-
-function handleTap(e) {
-  const prev = counter.get()
-  const next = counter.increment()
+els.btnIncrease.addEventListener('click', () => {
+  const n = counter.increment()
   navigator.vibrate?.(10)
-  renderCount(next, true)
-  spawnPlusOne(e)
-  const milestone = checkMilestone(prev, next)
-  if (milestone) {
-    celebrate(milestone)
-    if (milestone === 100) {
-      els.doneOverlay.hidden = false
-    }
-  }
-}
+  renderCount(n)
 
-els.tapZone.addEventListener('pointerdown', (e) => {
-  if (!e.isPrimary) return // 멀티터치 중복 카운트 방지
-  handleTap(e)
-})
-// 키보드 사용자용 (버튼 기본 click은 pointerdown과 중복되므로 keydown만 처리)
-els.tapZone.addEventListener('keydown', (e) => {
-  if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) {
-    e.preventDefault()
-    handleTap(e)
+  // 10의 배수마다 불꽃놀이, 100번 달성 시 특별 효과 (기존과 동일)
+  if (n % 10 === 0) triggerFirework()
+  if (n === 100) {
+    triggerFirework()
+    flashBackground()
+    releaseBalloons()
   }
 })
-els.tapZone.addEventListener('contextmenu', (e) => e.preventDefault())
 
-els.btnDoneClose.addEventListener('click', () => {
-  els.doneOverlay.hidden = true
-})
-
-// ---------- 보정/리셋 ----------
-els.btnMinus.addEventListener('click', () => renderCount(counter.decrement()))
 els.btnReset.addEventListener('click', () => {
-  if (confirm('오늘 횟수를 0으로 되돌릴까요?')) renderCount(counter.reset())
+  renderCount(counter.reset())
 })
 
-// ---------- 화면 꺼짐 방지 ----------
-function renderWake() {
-  const on = !!counter.getPref('wakeLock')
-  els.btnWake.setAttribute('aria-pressed', String(on))
-  els.btnWake.classList.toggle('chip-on', on)
-}
-
+// ---------- 화면 꺼짐 방지 (버튼 없이 첫 조작 시 자동 활성화) ----------
 if (wakelock.supported) {
-  els.btnWake.hidden = false
-  renderWake()
-  if (counter.getPref('wakeLock')) wakelock.enable()
-  wakelock.reacquireOnVisible(() => !!counter.getPref('wakeLock'))
-  els.btnWake.addEventListener('click', async () => {
-    if (counter.getPref('wakeLock')) {
-      wakelock.disable()
-      counter.setPref('wakeLock', false)
-    } else {
-      const ok = await wakelock.enable()
-      counter.setPref('wakeLock', ok)
-    }
-    renderWake()
+  let wakeRequested = false
+  els.btnIncrease.addEventListener('click', () => {
+    if (wakeRequested) return
+    wakeRequested = true
+    wakelock.enable()
+    wakelock.reacquireOnVisible(() => true)
   })
 }
