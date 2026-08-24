@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#ffffff" />
+  <meta name="theme-color" content="#f6f7f9" />
   <meta name="description" content="매주 말씀을 읊조리며 횟수를 세는 하가다 페이지" />
   <title>새가나안교회 하가다</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -14,36 +14,36 @@
 </head>
 <body>
   <!-- 날짜 + 칭호 + 글자 크기 조절 -->
-  <div id="date-container">
-    <div class="date-center">
-      <h2 id="date"></h2>
+  <header class="top">
+    <div class="date-wrap">
+      <h1 id="date"></h1>
       <span id="title-badge"></span>
     </div>
     <div class="font-controls">
-      <button id="font-decrease" class="font-size-btn" type="button">-</button>
-      <button id="font-increase" class="font-size-btn" type="button">+</button>
+      <button id="font-decrease" class="font-size-btn" type="button" aria-label="글자 작게">-</button>
+      <button id="font-increase" class="font-size-btn" type="button" aria-label="글자 크게">+</button>
     </div>
-  </div>
+  </header>
 
-  <!-- 말씀 영역 -->
-  <div id="verse-container">
-    <div id="verse">
-      <strong id="verse-ref" class="verse-title"></strong>
-      <div id="verse-body"></div>
-    </div>
-  </div>
+  <!-- 말씀 카드: 별도 프레임/내부 스크롤 없이 문서 흐름을 따라 표시 -->
+  <main class="verse-main">
+    <article class="verse-card">
+      <span id="verse-ref" class="verse-ref"></span>
+      <p id="verse-body" class="verse-body"></p>
+    </article>
+  </main>
 
-  <!-- 버튼 및 카운터 영역 -->
-  <div class="button-container">
-    <div id="counter">0</div>
+  <!-- 카운터 + 버튼: 화면 하단 고정 독 -->
+  <footer class="dock">
+    <div id="counter" class="counter">0</div>
     <div class="button-row">
-      <button id="btn-reset" class="reset" type="button">리셋</button>
-      <button id="btn-lang" class="toggle-lang" type="button">영문</button>
+      <button id="btn-reset" class="btn btn-reset" type="button">리셋</button>
+      <button id="btn-lang" class="btn btn-lang" type="button">영문</button>
     </div>
     <div class="button-row">
-      <button id="btn-increase" class="increase" type="button">+1</button>
+      <button id="btn-increase" class="btn btn-increase" type="button">+1</button>
     </div>
-  </div>
+  </footer>
 
   <script type="module" src="/src/main.js"></script>
 </body>
