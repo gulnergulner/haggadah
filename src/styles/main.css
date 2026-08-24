@@ -204,52 +204,103 @@ body {
   .counter { font-size: 42px; }
 }
 
-/* ---------- 불꽃놀이 효과 ---------- */
-.firework {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  width: 10px;
-  height: 10px;
-  background-color: red;
-  border-radius: 50%;
-  animation: explode 1s ease-out forwards;
-  pointer-events: none;
-  z-index: 900;
-}
+/* ---------- 축하 효과 공통 ---------- */
 
-@keyframes explode {
-  0% {
-    transform: scale(1) translate(-50%, -50%);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(50) translate(-50%, -50%);
-    opacity: 0;
-  }
-}
-
-/* ---------- 풍선 효과 ---------- */
-.balloon {
+/* 이모지 상승 (소형: 🙏✨📖 / 대형 피날레: 🎉🏆👑) */
+.fx-emoji {
   position: fixed;
-  bottom: -100px;
-  width: 50px;
-  height: 70px;
-  background-color: red;
-  border-radius: 50%;
-  animation: floatUp 5s ease-in forwards;
+  bottom: -48px;
+  font-size: var(--size, 28px);
   z-index: 1000;
   pointer-events: none;
+  animation: fx-emoji-rise var(--dur, 2.2s) ease-out forwards;
 }
 
-@keyframes floatUp {
-  0% {
-    transform: translateX(0) translateY(0);
+@keyframes fx-emoji-rise {
+  15% {
     opacity: 1;
   }
   100% {
-    transform: translateX(calc(100vw - 50px)) translateY(-100vh);
+    transform: translateY(-75vh) rotate(var(--rot, 20deg));
     opacity: 0;
+  }
+}
+
+/* 카운터 펄스 + 파동 링 */
+.counter.fx-pulse {
+  animation: fx-pulse 0.6s ease;
+}
+
+@keyframes fx-pulse {
+  30% {
+    transform: scale(1.35);
+    color: var(--green-deep);
+  }
+}
+
+.fx-ripple {
+  position: fixed;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px; /* left/top 기준점을 중심으로 */
+  border: 3px solid var(--green);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 900;
+  animation: fx-ripple 0.7s ease-out forwards;
+}
+
+@keyframes fx-ripple {
+  100% {
+    transform: scale(5);
+    opacity: 0;
+  }
+}
+
+/* 풍선: 몸통(좌우 흔들림) + 줄, 래퍼는 상승만 담당 */
+.fx-balloon {
+  position: fixed;
+  bottom: -140px;
+  z-index: 1000;
+  pointer-events: none;
+  animation: fx-rise var(--dur, 5s) ease-in forwards;
+}
+
+@keyframes fx-rise {
+  100% {
+    transform: translateY(calc(-100vh - 200px));
+  }
+}
+
+.fx-balloon-body {
+  position: relative;
+  width: var(--size, 48px);
+  height: calc(var(--size, 48px) * 1.22);
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.65), transparent 45%),
+    var(--color, #ef4444);
+  border-radius: 50% 50% 50% 50% / 55% 55% 45% 45%;
+  animation: fx-sway 1.6s ease-in-out infinite alternate;
+}
+
+/* 풍선 매듭 + 줄 */
+.fx-balloon-body::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: calc(var(--size, 48px) * 0.9);
+  background: rgba(120, 120, 130, 0.55);
+}
+
+@keyframes fx-sway {
+  from {
+    transform: translateX(-12px) rotate(-5deg);
+  }
+  to {
+    transform: translateX(12px) rotate(5deg);
   }
 }
 

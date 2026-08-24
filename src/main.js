@@ -2,7 +2,7 @@ import './styles/base.css'
 import './styles/main.css'
 import { createCounter } from './counter.js'
 import { cachedVerse, cacheIsFresh, fetchLatest } from './verse.js'
-import { triggerFirework, flashBackground, releaseBalloons } from './celebrate.js'
+import { celebrateMinor, celebrateGrand } from './celebrate.js'
 import * as wakelock from './wakelock.js'
 
 // 20회 단위 칭호 (기존 haggadah.html과 동일)
@@ -153,13 +153,9 @@ els.btnIncrease.addEventListener('click', () => {
   navigator.vibrate?.(10)
   renderCount(n)
 
-  // 10의 배수마다 불꽃놀이, 100번 달성 시 특별 효과 (기존과 동일)
-  if (n % 10 === 0) triggerFirework()
-  if (n === 100) {
-    triggerFirework()
-    flashBackground()
-    releaseBalloons()
-  }
+  // 10회마다 소형, 100회마다 대형 효과 — 풀에서 무작위, 직전 효과는 제외
+  if (n % 100 === 0) celebrateGrand()
+  else if (n % 10 === 0) celebrateMinor()
 })
 
 els.btnReset.addEventListener('click', () => {
