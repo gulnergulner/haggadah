@@ -72,6 +72,7 @@ if (!cacheIsFresh()) {
     if (latest) {
       verse = latest
       renderVerse()
+      applyFontSize()
     }
   })
 }
@@ -79,28 +80,57 @@ if (!cacheIsFresh()) {
 els.btnLang.addEventListener('click', () => {
   counter.setPref('lang', counter.getPref('lang') === 'ko' ? 'en' : 'ko')
   renderVerse()
+  applyFontSize()
 })
 
-// ---------- 글자 크기 조절 (기존과 동일하게 verseFontSize 키 사용) ----------
-const DEFAULT_FONT_SIZE = 20
-let verseFontSize =
-  parseInt(localStorage.getItem('verseFontSize'), 10) || DEFAULT_FONT_SIZE
+// ---------- 글자 크기: 화면에 잘리지 않는 최대 크기로 자동 맞춤 ----------
+// 사용자는 -/+ 버튼으로 자동 크기에서 줄이는 방향의 보정만 저장한다.
+const MIN_FONT = 12
+const MAX_FONT = 44
+let fontDelta = parseInt(localStorage.getItem('verseFontDelta'), 10) || 0
+
+const verseMain = document.querySelector('.verse-main')
+const verseCard = document.querySelector('.verse-card')
+
+// 이진 탐색으로 컨테이너를 넘치지 않는 최대 폰트 크기를 찾는다
+function fitFontSize() {
+  const avail = verseMain.clientHeight
+  let lo = MIN_FONT
+  let hi = MAX_FONT
+  let best = MIN_FONT
+  while (lo <= hi) {
+    const mid = Math.floor((lo + hi) / 2)
+    els.body.style.fontSize = `${mid}px`
+    if (verseCard.scrollHeight <= avail) {
+      best = mid
+      lo = mid + 1
+    } else {
+      hi = mid - 1
+    }
+  }
+  return best
+}
 
 function applyFontSize() {
-  els.body.style.fontSize = `${verseFontSize}px`
+  const fit = fitFontSize()
+  const size = Math.max(MIN_FONT, Math.min(fit, fit + fontDelta))
+  els.body.style.fontSize = `${size}px`
 }
 
 els.fontIncrease.addEventListener('click', () => {
-  verseFontSize += 4
-  localStorage.setItem('verseFontSize', verseFontSize)
+  fontDelta = Math.min(0, fontDelta + 4)
+  localStorage.setItem('verseFontDelta', fontDelta)
   applyFontSize()
 })
 els.fontDecrease.addEventListener('click', () => {
-  verseFontSize = Math.max(12, verseFontSize - 4)
-  localStorage.setItem('verseFontSize', verseFontSize)
+  fontDelta = Math.max(-(MAX_FONT - MIN_FONT), fontDelta - 4)
+  localStorage.setItem('verseFontDelta', fontDelta)
   applyFontSize()
 })
+
 applyFontSize()
+window.addEventListener('resize', applyFontSize)
+document.fonts?.ready.then(applyFontSize) // 세리프 폰트 로드 후 재계산
 
 // ---------- 카운터 ----------
 function renderCount(n) {
