@@ -36,6 +36,10 @@
   <!-- 카운터 + 버튼: 화면 하단 고정 독 -->
   <footer class="dock">
     <div id="counter" class="counter">0</div>
+    <div id="goal-progress" class="goal-progress">
+      <div class="goal-bar"><div id="goal-fill" class="goal-fill"></div></div>
+      <span id="goal-text" class="goal-text">0 / 100</span>
+    </div>
     <div class="button-row">
       <button id="btn-reset" class="btn btn-reset" type="button">리셋</button>
       <button id="btn-lang" class="btn btn-lang" type="button">영문</button>
@@ -44,6 +48,23 @@
       <button id="btn-increase" class="btn btn-increase" type="button">+1</button>
     </div>
   </footer>
+
+  <!-- 20/40/60/80회 짧은 피드백 -->
+  <div id="toast" class="toast" hidden></div>
+
+  <!-- 100회 달성 완료 카드 -->
+  <div id="done-overlay" class="done-overlay" hidden>
+    <div class="done-card">
+      <div class="done-emoji">🏆</div>
+      <h2>오늘의 하가다 완료</h2>
+      <p id="done-streak" class="done-line done-strong"></p>
+      <p id="done-tree" class="done-line"></p>
+      <p id="done-total" class="done-line"></p>
+      <p id="done-month" class="done-line done-soft"></p>
+      <p id="done-tomorrow" class="done-line done-hook"></p>
+      <button id="btn-done-close" class="btn done-btn" type="button">계속 읊조리기</button>
+    </div>
+  </div>
 
   <script type="module" src="/src/main.js"></script>
 </body>

@@ -316,3 +316,147 @@ body {
 .background-flash {
   animation: backgroundFlash 3s ease-in-out;
 }
+
+/* ---------- 100회 진행바 ---------- */
+.goal-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.goal-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--card-line);
+  overflow: hidden;
+}
+
+.goal-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: var(--green);
+  transition: width 0.25s ease, background 0.4s ease;
+}
+
+.goal-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.goal-progress.goal-done .goal-fill {
+  background: #f59e0b;
+}
+
+.goal-progress.goal-done .goal-text {
+  color: #d97706;
+}
+
+/* ---------- 토스트 (20/40/60/80회 피드백) ---------- */
+.toast {
+  position: fixed;
+  top: calc(14px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1100;
+  background: rgba(31, 36, 48, 0.92);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 18px;
+  border-radius: 999px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.toast-in {
+  animation: toast-in 0.3s ease;
+}
+
+@keyframes toast-in {
+  from {
+    transform: translate(-50%, -14px);
+    opacity: 0;
+  }
+}
+
+/* ---------- 100회 완료 카드 ---------- */
+.done-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(31, 36, 48, 0.45);
+  padding: 24px;
+}
+
+.done-card {
+  background: var(--card-bg);
+  border-radius: 24px;
+  padding: 28px 24px;
+  text-align: center;
+  max-width: 340px;
+  width: 100%;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  animation: card-in 0.35s cubic-bezier(0.2, 1.4, 0.5, 1);
+}
+
+@keyframes card-in {
+  from {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+}
+
+.done-emoji {
+  font-size: 52px;
+  margin-bottom: 6px;
+}
+
+.done-card h2 {
+  font-size: 21px;
+  margin-bottom: 14px;
+}
+
+.done-line {
+  font-size: 14.5px;
+  line-height: 1.55;
+  margin-bottom: 8px;
+  color: var(--text);
+  word-break: keep-all;
+}
+
+.done-strong {
+  font-size: 17px;
+  font-weight: 700;
+  color: #d97706;
+}
+
+.done-soft {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.done-hook {
+  white-space: pre-line;
+  font-weight: 700;
+  color: var(--badge-text);
+  margin-top: 12px;
+}
+
+.done-btn {
+  width: 100%;
+  margin-top: 14px;
+  background: var(--green);
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35);
+  padding: 0.8rem 1rem;
+  font-size: 1.1rem;
+}

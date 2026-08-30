@@ -3,17 +3,19 @@ import './styles/main.css'
 import { createCounter } from './counter.js'
 import { cachedVerse, cacheIsFresh, fetchLatest } from './verse.js'
 import { celebrateMinor, celebrateGrand } from './celebrate.js'
+import {
+  GOAL, currentStreak, monthlyAchieved, levelInfo,
+  streakTitle, nextStreakTitle, treeStage,
+} from './journey.js'
 import * as wakelock from './wakelock.js'
 
-// 20회 단위 칭호 (기존 haggadah.html과 동일)
-const TITLES = [
-  '🌱 새싹', // 1~19번
-  '⭐ 말씀 지킴이', // 20~39번
-  '🔥 신앙의 불꽃', // 40~59번
-  '💎 믿음의 보석', // 60~79번
-  '🌟 빛의 증인', // 80~99번
-  '🏆 말씀의 챔피언', // 100번 이상
-]
+// 20/40/60/80회 짧은 피드백 메시지
+const MILESTONE_MSGS = {
+  20: '🌱 말씀이 마음에 심기고 있어요',
+  40: '🌿 조금씩 익숙해지고 있어요',
+  60: '🔥 절반을 훌쩍 넘었어요',
+  80: '✨ 오늘의 말씀 완주가 가까워요',
+}
 
 const $ = (id) => document.getElementById(id)
 const els = {
@@ -22,11 +24,17 @@ const els = {
   ref: $('verse-ref'),
   body: $('verse-body'),
   counter: $('counter'),
+  goalProgress: $('goal-progress'),
+  goalFill: $('goal-fill'),
+  goalText: $('goal-text'),
+  toast: $('toast'),
   btnReset: $('btn-reset'),
   btnLang: $('btn-lang'),
   btnIncrease: $('btn-increase'),
   fontDecrease: $('font-decrease'),
   fontIncrease: $('font-increase'),
+  doneOverlay: $('done-overlay'),
+  btnDoneClose: $('btn-done-close'),
 }
 
 const counter = createCounter()
@@ -39,11 +47,17 @@ function renderDate() {
     `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`
 }
 
-// ---------- 칭호 ----------
-function updateTitleBadge(count) {
-  let idx = Math.floor(count / 20)
-  if (idx >= TITLES.length) idx = TITLES.length - 1
-  els.badge.innerText = TITLES[idx]
+// ---------- 헤더 배지: 칭호 · 레벨 · 연속 ----------
+function renderBadge() {
+  const s = counter.stats()
+  const streak = currentStreak(s.counts)
+  const { level } = levelInfo(s.total)
+  const parts = []
+  const title = streakTitle(streak)
+  if (title) parts.push(title)
+  if (level >= 1) parts.push(`Lv.${level}`)
+  if (streak >= 1) parts.push(`🔥 ${streak}일 연속`)
+  els.badge.innerText = parts.length ? parts.join(' · ') : '🙏 오늘 첫 100회에 도전해요'
 }
 
 // ---------- 말씀 렌더 ----------
@@ -132,10 +146,13 @@ applyFontSize()
 window.addEventListener('resize', applyFontSize)
 document.fonts?.ready.then(applyFontSize) // 세리프 폰트 로드 후 재계산
 
-// ---------- 카운터 ----------
+// ---------- 카운터 + 진행바 ----------
 function renderCount(n) {
   els.counter.innerText = n
-  updateTitleBadge(n)
+  els.goalFill.style.width = `${Math.min(n / GOAL, 1) * 100}%`
+  els.goalText.innerText = `${n} / ${GOAL}`
+  els.goalProgress.classList.toggle('goal-done', n >= GOAL)
+  renderBadge()
 }
 
 renderCount(counter.get())
@@ -148,14 +165,69 @@ document.addEventListener('visibilitychange', () => {
   }
 })
 
+// ---------- 토스트 ----------
+let toastTimer = null
+function showToast(message, ms = 2200) {
+  els.toast.innerText = message
+  els.toast.hidden = false
+  els.toast.classList.remove('toast-in')
+  void els.toast.offsetWidth // 애니메이션 재시작
+  els.toast.classList.add('toast-in')
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { els.toast.hidden = true }, ms)
+}
+
+// ---------- 100회 완료 카드 ----------
+function showDoneCard() {
+  const s = counter.stats()
+  const streak = currentStreak(s.counts)
+  const { level, remain } = levelInfo(s.total)
+  const stage = treeStage(s.achievedDays)
+  const prevStage = treeStage(Math.max(0, s.achievedDays - 1))
+  const next = nextStreakTitle(streak)
+
+  $('done-streak').innerText = `🔥 ${streak}일 연속 달성!`
+  $('done-tree').innerText = prevStage.emoji !== stage.emoji
+    ? `${prevStage.emoji} → ${stage.emoji}  말씀의 나무가 자랐어요!`
+    : `${stage.emoji} 말씀의 나무가 자라는 중 (${s.achievedDays}일째)`
+  $('done-total').innerText =
+    `지금까지 ${s.total.toLocaleString()}번 읊조렸습니다 · Lv.${level} (다음 레벨까지 ${remain.toLocaleString()}회)`
+  $('done-month').innerText =
+    `✅ 이번 달 ${monthlyAchieved(s.counts)}일 달성 · 🏆 최고 연속 ${s.bestStreak}일`
+
+  const lines = [`🔥 내일 달성하면 ${streak + 1}일 연속`]
+  if (next) {
+    lines.push(next.remain === 1
+      ? `내일이면 『${next.name}』 달성!`
+      : `『${next.name}』까지 ${next.remain}일`)
+  }
+  $('done-tomorrow').innerText = lines.join('\n')
+
+  els.doneOverlay.hidden = false
+}
+
+els.btnDoneClose.addEventListener('click', () => {
+  els.doneOverlay.hidden = true
+})
+
+// ---------- +1 ----------
 els.btnIncrease.addEventListener('click', () => {
+  const prev = counter.get()
   const n = counter.increment()
   navigator.vibrate?.(10)
   renderCount(n)
 
-  // 10회마다 소형, 100회마다 대형 효과 — 풀에서 무작위, 직전 효과는 제외
-  if (n % 100 === 0) celebrateGrand()
-  else if (n % 10 === 0) celebrateMinor()
+  if (prev < GOAL && n >= GOAL) {
+    // 오늘의 100회 달성: 대형 효과를 잠깐 보여준 뒤 완료 카드
+    celebrateGrand()
+    setTimeout(showDoneCard, 1000)
+  } else if (n % 100 === 0) {
+    celebrateGrand()
+  } else if (n % 10 === 0) {
+    celebrateMinor()
+    const msg = MILESTONE_MSGS[n]
+    if (msg) showToast(msg)
+  }
 })
 
 els.btnReset.addEventListener('click', () => {
