@@ -52,5 +52,43 @@ export function createCounter() {
         counts: state.counts,
       }
     },
+    // 동기화용: 서버에 저장할 스냅샷
+    exportState() {
+      return {
+        counts: { ...state.counts },
+        total: state.total,
+        achievedDays: state.achievedDays,
+        bestStreak: state.bestStreak,
+      }
+    },
+    // 동기화용: 서버 기록과 병합. 일자별로 큰 값을 채택하고
+    // 누적 통계는 양쪽 중 큰 값을 취한다. 변경이 있었으면 true.
+    mergeRemote(remote) {
+      if (!remote) return false
+      let changed = false
+      for (const [day, n] of Object.entries(remote.counts || {})) {
+        if (typeof n === 'number' && (state.counts[day] || 0) < n) {
+          state.counts[day] = n
+          changed = true
+        }
+      }
+      for (const key of ['total', 'achievedDays', 'bestStreak']) {
+        const v = remote[key]
+        if (typeof v === 'number' && v > state[key]) {
+          state[key] = v
+          changed = true
+        }
+      }
+      const streakFloor = maxStreak(state.counts) // 병합된 이력이 만든 새 연속 기록 반영
+      if (streakFloor > state.bestStreak) {
+        state.bestStreak = streakFloor
+        changed = true
+      }
+      if (changed) {
+        pruneOldCounts(state)
+        saveState(state)
+      }
+      return changed
+    },
   }
 }

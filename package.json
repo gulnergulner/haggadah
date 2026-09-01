@@ -9,8 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "canvas-confetti": "^1.9.4",
-    "firebase": "^12.1.0"
+    "@supabase/supabase-js": "^2.112.4",
+    "canvas-confetti": "^1.9.4"
   },
   "devDependencies": {
     "playwright-core": "^1.62.1",

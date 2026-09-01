@@ -15,6 +15,9 @@
 <body>
   <!-- 날짜 + 칭호 + 글자 크기 조절 -->
   <header class="top">
+    <div class="sync-controls">
+      <button id="btn-sync" class="sync-btn" type="button" hidden aria-label="카카오 계정으로 기록 동기화">☁️</button>
+    </div>
     <div class="date-wrap">
       <h1 id="date"></h1>
       <span id="title-badge"></span>
@@ -62,6 +65,7 @@
       <p id="done-total" class="done-line"></p>
       <p id="done-month" class="done-line done-soft"></p>
       <p id="done-tomorrow" class="done-line done-hook"></p>
+      <button id="btn-done-sync" class="btn done-sync-btn" type="button" hidden>💬 카카오로 기록 지키기</button>
       <button id="btn-done-close" class="btn done-btn" type="button">계속 읊조리기</button>
     </div>
   </div>

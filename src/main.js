@@ -7,6 +7,7 @@ import {
   GOAL, currentStreak, monthlyAchieved, levelInfo,
   streakTitle, nextStreakTitle, treeStage,
 } from './journey.js'
+import * as sync from './sync.js'
 import * as wakelock from './wakelock.js'
 
 // 20/40/60/80회 짧은 피드백 메시지
@@ -35,6 +36,8 @@ const els = {
   fontIncrease: $('font-increase'),
   doneOverlay: $('done-overlay'),
   btnDoneClose: $('btn-done-close'),
+  btnSync: $('btn-sync'),
+  btnDoneSync: $('btn-done-sync'),
 }
 
 const counter = createCounter()
@@ -221,18 +224,56 @@ els.btnIncrease.addEventListener('click', () => {
     // 오늘의 100회 달성: 대형 효과를 잠깐 보여준 뒤 완료 카드
     celebrateGrand()
     setTimeout(showDoneCard, 1000)
-  } else if (n % 100 === 0) {
-    celebrateGrand()
-  } else if (n % 10 === 0) {
-    celebrateMinor()
-    const msg = MILESTONE_MSGS[n]
-    if (msg) showToast(msg)
+    sync.flushPush() // 달성 순간은 바로 저장
+  } else {
+    if (n % 100 === 0) {
+      celebrateGrand()
+    } else if (n % 10 === 0) {
+      celebrateMinor()
+      const msg = MILESTONE_MSGS[n]
+      if (msg) showToast(msg)
+    }
+    sync.schedulePush()
   }
 })
 
 els.btnReset.addEventListener('click', () => {
   renderCount(counter.reset())
+  sync.schedulePush()
 })
+
+// ---------- 카카오 동기화 ----------
+function renderSyncUI() {
+  const on = sync.isLoggedIn()
+  els.btnSync.hidden = !sync.SYNC_ENABLED
+  els.btnSync.classList.toggle('sync-on', on)
+  els.btnSync.title = on ? '카카오 연결됨 — 기록이 자동 저장됩니다' : '카카오로 기록 지키기'
+  els.btnDoneSync.hidden = !sync.SYNC_ENABLED || on
+}
+
+renderSyncUI()
+sync.initSync({
+  counter,
+  onChange: () => renderCount(counter.get()), // 서버 기록 병합 후 화면 갱신
+  onUser: (user) => {
+    renderSyncUI()
+    if (user) showToast('☁️ 카카오 연결됨 — 기록이 안전하게 저장돼요')
+  },
+  onLoginError: () => showToast('카카오 로그인에 실패했어요. 다시 시도해 주세요'),
+})
+
+els.btnSync.addEventListener('click', () => {
+  if (sync.isLoggedIn()) {
+    if (confirm('카카오 연결을 해제할까요?\n(기록은 이 기기와 서버에 그대로 남습니다)')) {
+      sync.logout()
+      showToast('카카오 연결을 해제했어요')
+    }
+  } else {
+    sync.login()
+  }
+})
+
+els.btnDoneSync.addEventListener('click', () => sync.login())
 
 // ---------- 화면 꺼짐 방지 (버튼 없이 첫 조작 시 자동 활성화) ----------
 if (wakelock.supported) {

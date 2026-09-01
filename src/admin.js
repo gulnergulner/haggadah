@@ -1,15 +1,6 @@
 import './styles/base.css'
 import './styles/admin.css'
-import { getFirebaseApp, isConfigured, useEmulator } from './firebase.js'
-import { db } from './db.js'
-import {
-  connectAuthEmulator, getAuth, onAuthStateChanged,
-  signInWithEmailAndPassword, signOut,
-} from 'firebase/auth'
-import {
-  collection, deleteDoc, doc, getDocs, limit, orderBy, query,
-  serverTimestamp, setDoc, Timestamp,
-} from 'firebase/firestore'
+import { supabase, isConfigured } from './supabase.js'
 import { todayKey } from './storage.js'
 
 const $ = (id) => document.getElementById(id)
@@ -22,14 +13,11 @@ const fields = {
   bodyEn: $('f-body-en'),
 }
 
-let auth = null
-
 if (!isConfigured) {
   $('config-warning').hidden = false
 } else {
-  auth = getAuth(getFirebaseApp())
-  if (useEmulator) connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
-  onAuthStateChanged(auth, (user) => {
+  supabase.auth.onAuthStateChange((_event, session) => {
+    const user = session?.user || null
     views.login.hidden = !!user
     views.editor.hidden = !user
     $('btn-logout').hidden = !user
@@ -42,16 +30,18 @@ $('login-form').addEventListener('submit', async (e) => {
   e.preventDefault()
   const errEl = $('login-error')
   errEl.hidden = true
-  try {
-    await signInWithEmailAndPassword(auth, $('login-email').value.trim(), $('login-password').value)
-  } catch (err) {
+  const { error } = await supabase.auth.signInWithPassword({
+    email: $('login-email').value.trim(),
+    password: $('login-password').value,
+  })
+  if (error) {
     errEl.textContent = '로그인에 실패했습니다. 이메일/비밀번호를 확인해 주세요.'
     errEl.hidden = false
-    console.error(err)
+    console.error(error)
   }
 })
 
-$('btn-logout').addEventListener('click', () => signOut(auth))
+$('btn-logout').addEventListener('click', () => supabase.auth.signOut())
 
 // ---------- 게시 폼 ----------
 function nearestSunday() {
@@ -64,9 +54,9 @@ fields.date.value = nearestSunday()
 function readForm() {
   return {
     reference: fields.reference.value.trim(),
-    bodyKo: fields.bodyKo.value.trim(),
-    referenceEn: fields.referenceEn.value.trim(),
-    bodyEn: fields.bodyEn.value.trim(),
+    body_ko: fields.bodyKo.value.trim(),
+    reference_en: fields.referenceEn.value.trim(),
+    body_en: fields.bodyEn.value.trim(),
   }
 }
 
@@ -82,19 +72,20 @@ $('verse-form').addEventListener('submit', async (e) => {
   e.preventDefault()
   const dateStr = fields.date.value
   if (!dateStr) return
-  try {
-    // publishedAt은 게시일에서 결정적으로 생성 → 과거 말씀을 수정해도 최신 순서가 바뀌지 않음
-    await setDoc(doc(db, 'haggadot', dateStr), {
-      ...readForm(),
-      publishedAt: Timestamp.fromDate(new Date(`${dateStr}T00:00:00`)),
-      updatedAt: serverTimestamp(),
-    })
-    showStatus(`${dateStr} 말씀을 게시했습니다.`)
-    refreshList()
-  } catch (err) {
-    console.error(err)
+  // published_at은 게시일에서 결정적으로 생성 → 과거 말씀을 수정해도 최신 순서가 바뀌지 않음
+  const { error } = await supabase.from('haggadot').upsert({
+    id: dateStr,
+    ...readForm(),
+    published_at: new Date(`${dateStr}T00:00:00`).toISOString(),
+    updated_at: new Date().toISOString(),
+  })
+  if (error) {
+    console.error(error)
     showStatus('게시에 실패했습니다. 관리자 계정으로 로그인했는지 확인해 주세요.', true)
+    return
   }
+  showStatus(`${dateStr} 말씀을 게시했습니다.`)
+  refreshList()
 })
 
 // ---------- 미리보기 ----------
@@ -102,8 +93,8 @@ let previewLang = 'ko'
 function renderPreview() {
   const v = readForm()
   const en = previewLang === 'en'
-  $('pv-reference').textContent = en ? v.referenceEn : v.reference
-  $('pv-body').textContent = en ? v.bodyEn : v.bodyKo
+  $('pv-reference').textContent = en ? v.reference_en : v.reference
+  $('pv-body').textContent = en ? v.body_en : v.body_ko
   $('pv-ko').classList.toggle('active', !en)
   $('pv-en').classList.toggle('active', en)
 }
@@ -119,46 +110,52 @@ $('pv-en').addEventListener('click', () => { previewLang = 'en'; renderPreview()
 async function refreshList() {
   const listEl = $('verse-list')
   listEl.innerHTML = ''
-  try {
-    const snap = await getDocs(
-      query(collection(db, 'haggadot'), orderBy('publishedAt', 'desc'), limit(20)),
-    )
-    if (snap.empty) {
-      listEl.innerHTML = '<li class="verse-list-empty">아직 게시된 말씀이 없습니다.</li>'
-      return
-    }
-    for (const docSnap of snap.docs) {
-      const data = docSnap.data()
-      const li = document.createElement('li')
-
-      const loadBtn = document.createElement('button')
-      loadBtn.type = 'button'
-      loadBtn.className = 'verse-item'
-      loadBtn.textContent = `${docSnap.id} · ${data.reference}`
-      loadBtn.addEventListener('click', () => {
-        fields.date.value = docSnap.id
-        fields.reference.value = data.reference || ''
-        fields.bodyKo.value = data.bodyKo || ''
-        fields.referenceEn.value = data.referenceEn || ''
-        fields.bodyEn.value = data.bodyEn || ''
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-      })
-
-      const delBtn = document.createElement('button')
-      delBtn.type = 'button'
-      delBtn.className = 'verse-delete'
-      delBtn.textContent = '삭제'
-      delBtn.addEventListener('click', async () => {
-        if (!confirm(`${docSnap.id} 말씀을 삭제할까요?`)) return
-        await deleteDoc(doc(db, 'haggadot', docSnap.id))
-        refreshList()
-      })
-
-      li.append(loadBtn, delBtn)
-      listEl.appendChild(li)
-    }
-  } catch (err) {
-    console.error(err)
+  const { data, error } = await supabase
+    .from('haggadot')
+    .select('id, reference, reference_en, body_ko, body_en')
+    .order('published_at', { ascending: false })
+    .limit(20)
+  if (error) {
+    console.error(error)
     listEl.innerHTML = '<li class="verse-list-empty">목록을 불러오지 못했습니다.</li>'
+    return
+  }
+  if (!data.length) {
+    listEl.innerHTML = '<li class="verse-list-empty">아직 게시된 말씀이 없습니다.</li>'
+    return
+  }
+  for (const row of data) {
+    const li = document.createElement('li')
+
+    const loadBtn = document.createElement('button')
+    loadBtn.type = 'button'
+    loadBtn.className = 'verse-item'
+    loadBtn.textContent = `${row.id} · ${row.reference}`
+    loadBtn.addEventListener('click', () => {
+      fields.date.value = row.id
+      fields.reference.value = row.reference || ''
+      fields.bodyKo.value = row.body_ko || ''
+      fields.referenceEn.value = row.reference_en || ''
+      fields.bodyEn.value = row.body_en || ''
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    })
+
+    const delBtn = document.createElement('button')
+    delBtn.type = 'button'
+    delBtn.className = 'verse-delete'
+    delBtn.textContent = '삭제'
+    delBtn.addEventListener('click', async () => {
+      if (!confirm(`${row.id} 말씀을 삭제할까요?`)) return
+      const { error: delErr } = await supabase.from('haggadot').delete().eq('id', row.id)
+      if (delErr) {
+        console.error(delErr)
+        showStatus('삭제에 실패했습니다.', true)
+        return
+      }
+      refreshList()
+    })
+
+    li.append(loadBtn, delBtn)
+    listEl.appendChild(li)
   }
 }
