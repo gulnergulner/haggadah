@@ -292,6 +292,7 @@ function renderStats() {
       ? `☁️ ${name ? `${name}님, ` : ''}카카오 연결됨 — 기록이 자동 저장되고 하루핑과 XP가 합산돼요`
       : '지금 기록은 이 기기에만 저장되고 있어요.\n카카오로 로그인하면 안전하게 보관되고, 하루핑과 XP·레벨이 합산돼요.'
     $('btn-stats-kakao').hidden = on
+    $('btn-stats-nickname').hidden = !on
     $('btn-stats-logout').hidden = !on
   }
 }
@@ -305,6 +306,18 @@ els.btnStats.addEventListener('click', openStats)
 els.badge.addEventListener('click', openStats)
 $('btn-stats-close').addEventListener('click', () => { els.statsOverlay.hidden = true })
 $('btn-stats-kakao').addEventListener('click', () => sync.login())
+$('btn-stats-nickname').addEventListener('click', async () => {
+  const name = prompt('새 닉네임을 입력하세요 (1~16자)\n하루핑에도 함께 적용됩니다.', sync.getNickname() || '')
+  if (name === null) return
+  const result = await sync.changeNickname(name)
+  if (result.ok) {
+    showToast(`닉네임을 '${result.nickname}'(으)로 변경했어요`)
+    renderStats()
+  } else {
+    showToast(result.error)
+  }
+})
+
 $('btn-stats-logout').addEventListener('click', () => {
   if (confirm('카카오 연결을 해제할까요?\n(기록은 이 기기와 서버에 그대로 남습니다)')) {
     sync.logout()

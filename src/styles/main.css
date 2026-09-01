@@ -680,3 +680,9 @@ body {
   font-size: 20px;
   color: var(--text-soft);
 }
+
+.stats-account-actions {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+}

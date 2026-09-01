@@ -70,6 +70,25 @@ export function login() {
   location.href = '/api/auth/kakao'
 }
 
+/** 닉네임 변경 (하루핑과 공유되는 닉네임) */
+export async function changeNickname(name) {
+  try {
+    const res = await fetch('/api/nickname', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname: name }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (res.ok && data.ok) {
+      nickname = data.nickname
+      return { ok: true, nickname: data.nickname }
+    }
+    return { ok: false, error: data.error || '닉네임 변경에 실패했어요' }
+  } catch {
+    return { ok: false, error: '네트워크 오류가 발생했어요' }
+  }
+}
+
 export async function logout() {
   try { await fetch('/api/auth/logout', { method: 'POST' }) } catch { /* 무시 */ }
   loggedIn = false

@@ -29,6 +29,15 @@ export async function upsertUser(id, nickname) {
   `
 }
 
+export async function updateNickname(id, nickname) {
+  const sql = getSql()
+  await sql`
+    UPDATE "HarupingUser"
+    SET nickname = ${nickname}, "updatedAt" = now()
+    WHERE id = ${id}
+  `
+}
+
 export async function getUser(id) {
   const sql = getSql()
   const rows = await sql`
