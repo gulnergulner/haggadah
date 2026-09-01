@@ -45,7 +45,12 @@ export function login() {
   if (!supabase) return
   supabase.auth.signInWithOAuth({
     provider: 'kakao',
-    options: { redirectTo: `${location.origin}/` },
+    options: {
+      redirectTo: `${location.origin}/`,
+      // 기본값(account_email profile_image profile_nickname) 대신 닉네임만 요청.
+      // 이메일 동의항목은 카카오 비즈 앱 전환이 필요하므로 요청하지 않는다.
+      scopes: 'profile_nickname',
+    },
   })
 }
 
