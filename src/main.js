@@ -36,8 +36,9 @@ const els = {
   fontIncrease: $('font-increase'),
   doneOverlay: $('done-overlay'),
   btnDoneClose: $('btn-done-close'),
-  btnSync: $('btn-sync'),
+  btnStats: $('btn-stats'),
   btnDoneSync: $('btn-done-sync'),
+  statsOverlay: $('stats-overlay'),
 }
 
 const counter = createCounter()
@@ -242,13 +243,72 @@ els.btnReset.addEventListener('click', () => {
   sync.schedulePush()
 })
 
+// ---------- 상황판: 나의 말씀 여정 ----------
+function renderStats() {
+  const s = counter.stats()
+  const streak = currentStreak(s.counts)
+  const lv = levelInfo(s.total)
+  const stage = treeStage(s.achievedDays)
+  const next = nextStreakTitle(streak)
+
+  $('st-tree-emoji').innerText = stage.emoji
+  $('st-tree-label').innerText = s.achievedDays > 0
+    ? `말씀의 나무 — ${stage.name} (${s.achievedDays}일 달성)`
+    : '말씀의 나무 — 씨앗 (첫 100회를 기다려요)'
+
+  const title = streakTitle(streak)
+  const titleParts = []
+  if (title) titleParts.push(title)
+  if (next) titleParts.push(`다음 칭호 『${next.name}』까지 ${next.remain}일`)
+  $('st-title').innerText = titleParts.join(' · ') || '오늘 100회를 달성하면 여정이 시작돼요'
+
+  $('st-streak').innerText = `🔥 ${streak}일`
+  $('st-best').innerText = `🏆 ${s.bestStreak}일`
+  $('st-month').innerText = `✅ ${monthlyAchieved(s.counts)}일`
+  $('st-total').innerText = s.total.toLocaleString()
+
+  $('st-level').innerText = `⭐ Lv.${lv.level}`
+  $('st-level-remain').innerText = `Lv.${lv.level + 1}까지 ${lv.remain.toLocaleString()}회`
+  $('st-level-fill').style.width = `${Math.round(lv.progress * 100)}%`
+
+  $('st-today').innerText = `${counter.get()} / ${GOAL}`
+
+  // 카카오 동기화 섹션
+  const section = $('st-sync-section')
+  section.hidden = !sync.SYNC_ENABLED
+  if (sync.SYNC_ENABLED) {
+    const on = sync.isLoggedIn()
+    $('st-sync-msg').innerText = on
+      ? '☁️ 카카오 연결됨 — 기록이 자동으로 안전하게 저장되고, 다른 기기에서도 이어져요'
+      : '지금 기록은 이 기기에만 저장되고 있어요.\n카카오로 로그인하면 안전하게 보관되고 다른 기기에서도 이어져요.'
+    $('btn-stats-kakao').hidden = on
+    $('btn-stats-logout').hidden = !on
+  }
+}
+
+function openStats() {
+  renderStats()
+  els.statsOverlay.hidden = false
+}
+
+els.btnStats.addEventListener('click', openStats)
+els.badge.addEventListener('click', openStats)
+$('btn-stats-close').addEventListener('click', () => { els.statsOverlay.hidden = true })
+$('btn-stats-kakao').addEventListener('click', () => sync.login())
+$('btn-stats-logout').addEventListener('click', () => {
+  if (confirm('카카오 연결을 해제할까요?\n(기록은 이 기기와 서버에 그대로 남습니다)')) {
+    sync.logout()
+    showToast('카카오 연결을 해제했어요')
+    renderStats()
+  }
+})
+
 // ---------- 카카오 동기화 ----------
 function renderSyncUI() {
   const on = sync.isLoggedIn()
-  els.btnSync.hidden = !sync.SYNC_ENABLED
-  els.btnSync.classList.toggle('sync-on', on)
-  els.btnSync.title = on ? '카카오 연결됨 — 기록이 자동 저장됩니다' : '카카오로 기록 지키기'
+  els.btnStats.classList.toggle('sync-on', sync.SYNC_ENABLED && on)
   els.btnDoneSync.hidden = !sync.SYNC_ENABLED || on
+  if (!els.statsOverlay.hidden) renderStats()
 }
 
 renderSyncUI()
@@ -262,18 +322,17 @@ sync.initSync({
   onLoginError: () => showToast('카카오 로그인에 실패했어요. 다시 시도해 주세요'),
 })
 
-els.btnSync.addEventListener('click', () => {
-  if (sync.isLoggedIn()) {
-    if (confirm('카카오 연결을 해제할까요?\n(기록은 이 기기와 서버에 그대로 남습니다)')) {
-      sync.logout()
-      showToast('카카오 연결을 해제했어요')
-    }
-  } else {
-    sync.login()
-  }
-})
-
 els.btnDoneSync.addEventListener('click', () => sync.login())
+
+// 로그인 안내: 기기당 1회, 접속 2초 후 살짝 보여준다
+if (sync.SYNC_ENABLED && !localStorage.getItem('haggadah.kakaoNudge')) {
+  setTimeout(() => {
+    if (!sync.isLoggedIn()) {
+      showToast('📊 왼쪽 위 버튼에서 내 여정 확인 + 카카오로 기록을 지킬 수 있어요', 3500)
+      try { localStorage.setItem('haggadah.kakaoNudge', '1') } catch { /* 무시 */ }
+    }
+  }, 2000)
+}
 
 // ---------- 화면 꺼짐 방지 (버튼 없이 첫 조작 시 자동 활성화) ----------
 if (wakelock.supported) {

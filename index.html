@@ -16,11 +16,11 @@
   <!-- 날짜 + 칭호 + 글자 크기 조절 -->
   <header class="top">
     <div class="sync-controls">
-      <button id="btn-sync" class="sync-btn" type="button" hidden aria-label="카카오 계정으로 기록 동기화">☁️</button>
+      <button id="btn-stats" class="sync-btn" type="button" aria-label="나의 말씀 여정 보기">📊</button>
     </div>
     <div class="date-wrap">
       <h1 id="date"></h1>
-      <span id="title-badge"></span>
+      <button id="title-badge" type="button" aria-label="나의 말씀 여정 보기"></button>
     </div>
     <div class="font-controls">
       <button id="font-decrease" class="font-size-btn" type="button" aria-label="글자 작게">-</button>
@@ -67,6 +67,45 @@
       <p id="done-tomorrow" class="done-line done-hook"></p>
       <button id="btn-done-sync" class="btn done-sync-btn" type="button" hidden>💬 카카오로 기록 지키기</button>
       <button id="btn-done-close" class="btn done-btn" type="button">계속 읊조리기</button>
+    </div>
+  </div>
+
+  <!-- 상황판: 나의 말씀 여정 -->
+  <div id="stats-overlay" class="done-overlay" hidden>
+    <div class="done-card stats-card">
+      <h2>나의 말씀 여정</h2>
+
+      <div class="stats-tree">
+        <span id="st-tree-emoji" class="stats-tree-emoji"></span>
+        <span id="st-tree-label" class="stats-tree-label"></span>
+      </div>
+
+      <p id="st-title" class="stats-title-line"></p>
+
+      <div class="stats-grid">
+        <div><b id="st-streak"></b><span>현재 연속</span></div>
+        <div><b id="st-best"></b><span>최고 연속</span></div>
+        <div><b id="st-month"></b><span>이번 달 달성</span></div>
+        <div><b id="st-total"></b><span>누적 읊조림</span></div>
+      </div>
+
+      <div class="stats-level">
+        <div class="stats-level-head">
+          <span id="st-level"></span>
+          <span id="st-level-remain"></span>
+        </div>
+        <div class="goal-bar"><div id="st-level-fill" class="goal-fill"></div></div>
+      </div>
+
+      <p class="stats-today">오늘 <b id="st-today"></b></p>
+
+      <div id="st-sync-section" hidden>
+        <p id="st-sync-msg" class="stats-sync-msg"></p>
+        <button id="btn-stats-kakao" class="btn done-sync-btn stats-kakao" type="button" hidden>💬 카카오로 기록 지키기</button>
+        <button id="btn-stats-logout" class="stats-logout" type="button" hidden>카카오 연결 해제</button>
+      </div>
+
+      <button id="btn-stats-close" class="btn done-btn" type="button">닫기</button>
     </div>
   </div>
 

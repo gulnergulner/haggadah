@@ -56,6 +56,23 @@ console.log('달성 후 배지:', await page.locator('#title-badge').textContent
 console.log('달성 후 진행바:', await page.locator('#goal-text').textContent())
 await page.screenshot({ path: 'scripts/shot-achieved.png' })
 
+// 상황판: 배지 탭 → 열림 → 내용 확인 → 닫기
+await page.locator('#title-badge').tap()
+await page.waitForTimeout(600) // 카드 등장 애니메이션 완료 대기
+console.log('상황판 표시:', await page.locator('#stats-overlay').isVisible())
+console.log('  나무:', await page.locator('#st-tree-label').textContent())
+console.log('  연속/최고/이달/누적:',
+  await page.locator('#st-streak').textContent(),
+  await page.locator('#st-best').textContent(),
+  await page.locator('#st-month').textContent(),
+  await page.locator('#st-total').textContent())
+console.log('  레벨:', await page.locator('#st-level').textContent(),
+  '/', await page.locator('#st-level-remain').textContent())
+console.log('  오늘:', await page.locator('#st-today').textContent())
+await page.screenshot({ path: 'scripts/shot-stats.png' })
+await page.locator('#btn-stats-close').tap()
+console.log('상황판 닫힘:', !(await page.locator('#stats-overlay').isVisible()))
+
 // 언어 전환 → 버튼 라벨 변경 확인
 await page.locator('#btn-lang').tap()
 console.log('전환 후 언어 버튼:', await page.locator('#btn-lang').textContent())

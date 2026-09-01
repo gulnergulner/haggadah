@@ -50,8 +50,14 @@ export function monthlyAchieved(counts, today = todayKey()) {
 export function levelInfo(total) {
   let level = 0
   while (total >= 50 * (level + 1) * (level + 2)) level++
+  const base = 50 * level * (level + 1) // 현재 레벨 시작점
   const next = 50 * (level + 1) * (level + 2)
-  return { level, next, remain: next - total }
+  return {
+    level,
+    next,
+    remain: next - total,
+    progress: (total - base) / (next - base), // 0~1, 다음 레벨까지의 진행률
+  }
 }
 
 // 연속 달성 일수에 따른 칭호 (긴 기간 우선)
