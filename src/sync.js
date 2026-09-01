@@ -8,7 +8,7 @@ import { supabase, isConfigured } from './supabase.js'
 
 // Supabase 대시보드에서 카카오 공급자 설정이 끝나면 true로 변경.
 // false면 동기화 UI가 전혀 표시되지 않고 기존과 동일하게 동작한다.
-export const SYNC_ENABLED = false
+export const SYNC_ENABLED = true
 
 const PUSH_DELAY_MS = 3000
 
