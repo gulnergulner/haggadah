@@ -14,6 +14,8 @@ const PUSH_DELAY_MS = 3000
 let loggedIn = false
 let nickname = null
 let harupingXp = 0
+// 서버(/api/me) 응답 전에는 레벨을 표시하지 않는다 — 응답 후 합산 레벨만 노출
+let xpReady = !SYNC_ENABLED
 let counter = null
 let onChange = null
 let pushTimer = null
@@ -27,6 +29,11 @@ export function getHarupingXp() {
   return harupingXp
 }
 
+/** 레벨 표시 가능 여부 — /api/me 응답(성공/실패 무관)이 온 뒤에만 true */
+export function isXpReady() {
+  return xpReady
+}
+
 export function getNickname() {
   return nickname
 }
@@ -38,6 +45,7 @@ export function initSync(opts) {
 
   // 카카오 로그인에서 돌아온 경우 URL 정리 + 실패 안내
   const params = new URLSearchParams(location.search)
+  const justLoggedIn = params.get('login') === 'ok'
   if (params.has('login')) {
     const failed = params.get('login') === 'failed'
     history.replaceState(null, '', location.pathname)
@@ -50,15 +58,20 @@ export function initSync(opts) {
     .then((me) => {
       loggedIn = !!me.loggedIn
       nickname = me.nickname ?? null
-      harupingXp = typeof me.harupingXp === 'number' ? me.harupingXp : 0
-      opts.onUser?.(loggedIn)
+      harupingXp = loggedIn && typeof me.harupingXp === 'number' ? me.harupingXp : 0
+      xpReady = true
+      opts.onUser?.(loggedIn, justLoggedIn)
       if (loggedIn) {
         const changed = counter.mergeRemote(me.haggadah || null)
         if (changed) onChange?.()
         flushPush() // 병합 결과(또는 첫 백업)를 서버에 기록
       }
     })
-    .catch(() => { /* 오프라인/로컬 개발 등 — 비로그인으로 동작 */ })
+    .catch(() => {
+      // 오프라인/로컬 개발 등 — 비로그인·로컬 XP 기준으로 표시
+      xpReady = true
+      opts.onUser?.(false, false)
+    })
 
   // 화면을 벗어날 때 저장 대기분을 즉시 반영
   document.addEventListener('visibilitychange', () => {

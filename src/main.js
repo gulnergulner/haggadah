@@ -61,11 +61,14 @@ function combinedXpState() {
 function renderBadge() {
   const s = counter.stats()
   const streak = currentStreak(s.counts)
-  const xp = combinedXpState()
   const parts = []
   const title = streakTitle(streak)
   if (title) parts.push(title)
-  if (xp.total > 0) parts.push(`${levelBadge(xp.level)} Lv.${xp.level}`)
+  // 레벨은 서버 응답(하루핑 XP) 도착 후에만 표시 — 값이 바뀌어 보이는 혼란 방지
+  if (sync.isXpReady()) {
+    const xp = combinedXpState()
+    if (xp.total > 0) parts.push(`${levelBadge(xp.level)} Lv.${xp.level}`)
+  }
   if (streak >= 1) parts.push(`🔥 ${streak}일 연속`)
   els.badge.innerText = parts.length ? parts.join(' · ') : '🙏 오늘 첫 100회에 도전해요'
 }
@@ -201,8 +204,10 @@ function showDoneCard() {
     ? `${prevStage.emoji} → ${stage.emoji}  말씀의 나무가 자랐어요!`
     : `${stage.emoji} 말씀의 나무가 자라는 중 (${s.achievedDays}일째)`
   $('done-total').innerText =
-    `지금까지 ${s.total.toLocaleString()}번 읊조렸습니다 · `
-    + `${levelBadge(xp.level)} Lv.${xp.level} (다음 레벨까지 ${(xp.xpNeed - xp.xpInto).toLocaleString()} XP)`
+    `지금까지 ${s.total.toLocaleString()}번 읊조렸습니다`
+    + (sync.isXpReady()
+      ? ` · ${levelBadge(xp.level)} Lv.${xp.level} (다음 레벨까지 ${(xp.xpNeed - xp.xpInto).toLocaleString()} XP)`
+      : '')
   $('done-month').innerText =
     `✅ 이번 달 ${monthlyAchieved(s.counts)}일 달성 · 🏆 최고 연속 ${s.bestStreak}일`
 
@@ -274,11 +279,17 @@ function renderStats() {
   $('st-month').innerText = `✅ ${monthlyAchieved(s.counts)}일`
   $('st-total').innerText = s.total.toLocaleString()
 
-  $('st-level').innerText =
-    `${levelBadge(xp.level)} Lv.${xp.level} · ${xp.total.toLocaleString()} XP`
-    + (sync.isLoggedIn() ? ' (하루핑 합산)' : '')
-  $('st-level-remain').innerText = `Lv.${xp.level + 1}까지 ${(xp.xpNeed - xp.xpInto).toLocaleString()} XP`
-  $('st-level-fill').style.width = `${Math.round((xp.xpInto / xp.xpNeed) * 100)}%`
+  if (sync.isXpReady()) {
+    $('st-level').innerText =
+      `${levelBadge(xp.level)} Lv.${xp.level} · ${xp.total.toLocaleString()} XP`
+      + (sync.isLoggedIn() ? ' (하루핑 합산)' : '')
+    $('st-level-remain').innerText = `Lv.${xp.level + 1}까지 ${(xp.xpNeed - xp.xpInto).toLocaleString()} XP`
+    $('st-level-fill').style.width = `${Math.round((xp.xpInto / xp.xpNeed) * 100)}%`
+  } else {
+    $('st-level').innerText = '⏳ 레벨 불러오는 중'
+    $('st-level-remain').innerText = ''
+    $('st-level-fill').style.width = '0%'
+  }
 
   $('st-today').innerText = `${counter.get()} / ${GOAL}`
 
@@ -338,9 +349,10 @@ renderSyncUI()
 sync.initSync({
   counter,
   onChange: () => renderCount(counter.get()), // 서버 기록 병합 후 화면 갱신
-  onUser: (user) => {
+  onUser: (user, justLoggedIn) => {
     renderSyncUI()
-    if (user) showToast('☁️ 카카오 연결됨 — 기록이 안전하게 저장돼요')
+    renderCount(counter.get()) // 하루핑 XP 반영해 배지(합산 레벨) 갱신
+    if (user && justLoggedIn) showToast('☁️ 카카오 연결됨 — 기록이 안전하게 저장돼요')
   },
   onLoginError: () => showToast('카카오 로그인에 실패했어요. 다시 시도해 주세요'),
 })
