@@ -651,6 +651,10 @@ body {
   transform: scale(0.98);
 }
 
+.stats-crosslink + .stats-crosslink {
+  margin-top: 8px;
+}
+
 .crosslink-emoji {
   font-size: 24px;
 }

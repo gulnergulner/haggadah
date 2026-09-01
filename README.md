@@ -40,24 +40,38 @@ npm run build
 firebase deploy --only hosting
 ```
 
-## 카카오 로그인 동기화 (선택)
+## 카카오 로그인 + 하루핑 공유 DB 동기화
 
-Supabase Auth의 카카오 공급자를 켜면 개인 기록이 기기 간 동기화된다.
+카카오 로그인은 하루핑(haruping.godagent.net)과 동일한 **자체 OAuth + HMAC 세션
+쿠키** 방식이다 (Vercel 함수 `api/`). scope를 요청하지 않아 카카오 동의항목/비즈 앱
+설정이 필요 없고, 세션 쿠키(`hp_session`)가 `.godagent.net` 공유라 하가다에서
+로그인하면 하루핑에도 로그인된다 (같은 `SESSION_SECRET` 필요).
 
-1. **카카오 개발자 콘솔** (developers.kakao.com): 앱 생성 →
-   플랫폼 Web에 `https://haggadah.godagent.net` 등록 → 카카오 로그인 ON →
-   **Redirect URI**: `https://<프로젝트ref>.supabase.co/auth/v1/callback` →
-   보안 탭에서 **Client Secret 생성**("사용함").
-2. **Supabase 대시보드 → Authentication → Sign In / Providers → Kakao**:
-   Enable + 카카오 **REST API 키**와 **Client Secret** 입력.
-3. **Authentication → URL Configuration**: Site URL을
-   `https://haggadah.godagent.net`으로, Redirect URLs에 같은 주소 추가.
-4. `src/sync.js`의 `SYNC_ENABLED`를 `true`로 변경 후 push.
+개인 기록은 하루핑이 쓰는 **dailyword(manna) Supabase Postgres**의
+`HarupingUser` 테이블에 저장된다 (카카오 ID가 공통 키):
+- `state` (jsonb) — 하루핑의 XP/진행 (하가다는 읽기만: xpTotal)
+- `haggadah` (jsonb) — 하가다의 counts/total/achievedDays/bestStreak
 
-동작: 로그인하지 않은 사용자는 기기 로컬 저장 그대로. 헤더 왼쪽 ☁️ 버튼 또는
-100회 완료 카드의 "카카오로 기록 지키기"로 로그인하면 `user_records` 행에
-기록이 병합·백업되고, 다른 기기에서 같은 카카오 계정으로 로그인하면 이어진다.
-쓰기는 조작 종료 3초 후/화면 이탈 시에만 발생한다.
+**XP·레벨은 두 서비스 합산**: 하가다 XP = 읊조림 1회 1XP + 하루 100회 달성
+보너스 100XP. 레벨 공식은 하루핑과 동일 (`100 + (level-1)×50`), 뱃지도 동일.
+
+### 설정 (1회)
+
+1. dailyword Supabase SQL Editor에서 하가다 컬럼 추가:
+   ```sql
+   ALTER TABLE public."HarupingUser"
+     ADD COLUMN IF NOT EXISTS haggadah jsonb NOT NULL DEFAULT '{}'::jsonb;
+   ```
+2. Vercel(haggadah 프로젝트) 환경 변수 — **하루핑 Vercel 프로젝트의 값을 그대로 복사**:
+   - `DATABASE_URL` (dailyword pooler, haruping_ro 롤)
+   - `SESSION_SECRET` (하루핑과 동일해야 로그인 공유)
+   - `KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET`
+3. 카카오 개발자 콘솔(하루핑 앱) → 카카오 로그인 → Redirect URI 추가:
+   `https://haggadah.godagent.net/api/auth/kakao/callback`
+
+동작: 로그인하지 않은 사용자는 기기 로컬 저장 그대로. 상황판(📊)의
+"카카오로 기록 지키기" 또는 100회 완료 카드에서 로그인하면 기록이 병합·백업되고,
+다른 기기·하루핑과 이어진다. 쓰기는 조작 종료 3초 후/화면 이탈 시에만 발생한다.
 
 ## 도메인을 Vercel로 전환
 

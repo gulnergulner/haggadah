@@ -4,7 +4,8 @@ import { createCounter } from './counter.js'
 import { cachedVerse, cacheIsFresh, fetchLatest } from './verse.js'
 import { celebrateMinor, celebrateGrand } from './celebrate.js'
 import {
-  GOAL, currentStreak, monthlyAchieved, levelInfo,
+  GOAL, currentStreak, monthlyAchieved,
+  haggadahXp, xpStateFromTotal, levelBadge,
   streakTitle, nextStreakTitle, treeStage,
 } from './journey.js'
 import * as sync from './sync.js'
@@ -52,14 +53,19 @@ function renderDate() {
 }
 
 // ---------- 헤더 배지: 칭호 · 레벨 · 연속 ----------
+// 레벨은 하루핑 XP와 합산 (로그인 시 서버에서 하루핑 XP를 받아온다)
+function combinedXpState() {
+  return xpStateFromTotal(haggadahXp(counter.stats()) + sync.getHarupingXp())
+}
+
 function renderBadge() {
   const s = counter.stats()
   const streak = currentStreak(s.counts)
-  const { level } = levelInfo(s.total)
+  const xp = combinedXpState()
   const parts = []
   const title = streakTitle(streak)
   if (title) parts.push(title)
-  if (level >= 1) parts.push(`Lv.${level}`)
+  if (xp.total > 0) parts.push(`${levelBadge(xp.level)} Lv.${xp.level}`)
   if (streak >= 1) parts.push(`🔥 ${streak}일 연속`)
   els.badge.innerText = parts.length ? parts.join(' · ') : '🙏 오늘 첫 100회에 도전해요'
 }
@@ -185,7 +191,7 @@ function showToast(message, ms = 2200) {
 function showDoneCard() {
   const s = counter.stats()
   const streak = currentStreak(s.counts)
-  const { level, remain } = levelInfo(s.total)
+  const xp = combinedXpState()
   const stage = treeStage(s.achievedDays)
   const prevStage = treeStage(Math.max(0, s.achievedDays - 1))
   const next = nextStreakTitle(streak)
@@ -195,7 +201,8 @@ function showDoneCard() {
     ? `${prevStage.emoji} → ${stage.emoji}  말씀의 나무가 자랐어요!`
     : `${stage.emoji} 말씀의 나무가 자라는 중 (${s.achievedDays}일째)`
   $('done-total').innerText =
-    `지금까지 ${s.total.toLocaleString()}번 읊조렸습니다 · Lv.${level} (다음 레벨까지 ${remain.toLocaleString()}회)`
+    `지금까지 ${s.total.toLocaleString()}번 읊조렸습니다 · `
+    + `${levelBadge(xp.level)} Lv.${xp.level} (다음 레벨까지 ${(xp.xpNeed - xp.xpInto).toLocaleString()} XP)`
   $('done-month').innerText =
     `✅ 이번 달 ${monthlyAchieved(s.counts)}일 달성 · 🏆 최고 연속 ${s.bestStreak}일`
 
@@ -247,7 +254,7 @@ els.btnReset.addEventListener('click', () => {
 function renderStats() {
   const s = counter.stats()
   const streak = currentStreak(s.counts)
-  const lv = levelInfo(s.total)
+  const xp = combinedXpState()
   const stage = treeStage(s.achievedDays)
   const next = nextStreakTitle(streak)
 
@@ -267,9 +274,11 @@ function renderStats() {
   $('st-month').innerText = `✅ ${monthlyAchieved(s.counts)}일`
   $('st-total').innerText = s.total.toLocaleString()
 
-  $('st-level').innerText = `⭐ Lv.${lv.level}`
-  $('st-level-remain').innerText = `Lv.${lv.level + 1}까지 ${lv.remain.toLocaleString()}회`
-  $('st-level-fill').style.width = `${Math.round(lv.progress * 100)}%`
+  $('st-level').innerText =
+    `${levelBadge(xp.level)} Lv.${xp.level} · ${xp.total.toLocaleString()} XP`
+    + (sync.isLoggedIn() ? ' (하루핑 합산)' : '')
+  $('st-level-remain').innerText = `Lv.${xp.level + 1}까지 ${(xp.xpNeed - xp.xpInto).toLocaleString()} XP`
+  $('st-level-fill').style.width = `${Math.round((xp.xpInto / xp.xpNeed) * 100)}%`
 
   $('st-today').innerText = `${counter.get()} / ${GOAL}`
 
@@ -278,9 +287,10 @@ function renderStats() {
   section.hidden = !sync.SYNC_ENABLED
   if (sync.SYNC_ENABLED) {
     const on = sync.isLoggedIn()
+    const name = sync.getNickname()
     $('st-sync-msg').innerText = on
-      ? '☁️ 카카오 연결됨 — 기록이 자동으로 안전하게 저장되고, 다른 기기에서도 이어져요'
-      : '지금 기록은 이 기기에만 저장되고 있어요.\n카카오로 로그인하면 안전하게 보관되고 다른 기기에서도 이어져요.'
+      ? `☁️ ${name ? `${name}님, ` : ''}카카오 연결됨 — 기록이 자동 저장되고 하루핑과 XP가 합산돼요`
+      : '지금 기록은 이 기기에만 저장되고 있어요.\n카카오로 로그인하면 안전하게 보관되고, 하루핑과 XP·레벨이 합산돼요.'
     $('btn-stats-kakao').hidden = on
     $('btn-stats-logout').hidden = !on
   }

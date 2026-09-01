@@ -46,18 +46,33 @@ export function monthlyAchieved(counts, today = todayKey()) {
   return Object.keys(counts).filter((k) => k.startsWith(month) && counts[k] >= GOAL).length
 }
 
-// 누적 레벨: Lv.n 도달 기준 = 50·n·(n+1)회 → 100, 300, 600, 1000, 1500, ...
-export function levelInfo(total) {
-  let level = 0
-  while (total >= 50 * (level + 1) * (level + 2)) level++
-  const base = 50 * level * (level + 1) // 현재 레벨 시작점
-  const next = 50 * (level + 1) * (level + 2)
-  return {
-    level,
-    next,
-    remain: next - total,
-    progress: (total - base) / (next - base), // 0~1, 다음 레벨까지의 진행률
+// ---------- XP / 레벨 (하루핑과 동일한 공식 — 두 서비스의 XP를 합산) ----------
+
+// 하가다 XP: 읊조림 1회 = 1XP, 하루 100회 달성 보너스 +100XP
+export function haggadahXp(stats) {
+  return stats.total + stats.achievedDays * 100
+}
+
+/** level → level+1 에 필요한 XP (하루핑과 동일) */
+export function xpNeedFor(level) {
+  return 100 + (level - 1) * 50
+}
+
+export function xpStateFromTotal(total) {
+  let level = 1
+  let rest = total
+  while (rest >= xpNeedFor(level)) {
+    rest -= xpNeedFor(level)
+    level++
   }
+  return { total, level, xpInto: rest, xpNeed: xpNeedFor(level) }
+}
+
+const LEVEL_BADGES = ['🌱', '🌿', '🍀', '🌸', '🌳', '⭐', '🌟', '💎', '👑', '🏆']
+
+/** 레벨 3개마다 뱃지가 성장한다 (하루핑과 동일) */
+export function levelBadge(level) {
+  return LEVEL_BADGES[Math.min(Math.floor((level - 1) / 3), LEVEL_BADGES.length - 1)]
 }
 
 // 연속 달성 일수에 따른 칭호 (긴 기간 우선)
