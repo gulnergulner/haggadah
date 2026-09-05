@@ -1,15 +1,24 @@
 import { supabase, isConfigured } from './supabase.js'
 import { loadVerseCache, saveVerseCache } from './storage.js'
 
-const FRESH_MS = 30 * 60 * 1000 // 30분 이내면 네트워크 조회 생략
+const REQUEST_TIMEOUT_MS = 8000
+let inFlight = null
 
-export function cachedVerse() {
-  return loadVerseCache()?.data || null
+// 말씀의 주간 경계는 사용자 기기 시간대와 무관하게 한국 시간 주일이다.
+export function currentWeekKey(now = new Date()) {
+  const korea = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+  korea.setUTCDate(korea.getUTCDate() - korea.getUTCDay())
+  return korea.toISOString().slice(0, 10)
 }
 
-export function cacheIsFresh() {
-  const c = loadVerseCache()
-  return !!c && Date.now() - c.fetchedAt < FRESH_MS
+export function cachedVerse() {
+  const data = loadVerseCache()?.data
+  return data?.id <= currentWeekKey() ? data : null
+}
+
+export function cachedCurrentWeekVerse() {
+  const data = cachedVerse()
+  return data?.id === currentWeekKey() ? data : null
 }
 
 // DB 행(snake_case) → 앱에서 쓰는 형태(camelCase)
@@ -23,22 +32,63 @@ export function rowToVerse(row) {
   }
 }
 
-// 최신 말씀 1건 조회. 실패하면 null 반환(호출부는 캐시를 유지).
-export async function fetchLatest() {
-  if (!isConfigured) return null
+// 수정 시각만 먼저 확인하고 변경된 경우에만 본문을 받는다.
+async function revalidateLatest() {
+  if (!isConfigured) return cachedVerse()
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  const latestQuery = (columns) => supabase
+    .from('haggadot')
+    .select(columns)
+    .lte('id', currentWeekKey())
+    .order('id', { ascending: false })
+    .limit(1)
+    .abortSignal(controller.signal)
   try {
-    const { data, error } = await supabase
-      .from('haggadot')
-      .select('id, reference, reference_en, body_ko, body_en')
-      .order('published_at', { ascending: false })
-      .limit(1)
+    const { data, error } = await latestQuery('id, updated_at')
     if (error) throw error
-    if (!data?.length) return null
-    const verse = rowToVerse(data[0])
-    saveVerseCache({ id: verse.id, data: verse, fetchedAt: Date.now() })
+    if (!data?.length) {
+      saveVerseCache(null)
+      return null
+    }
+    const latest = data[0]
+    const cache = loadVerseCache()
+    if (cache?.data?.id === latest.id && latest.updated_at
+      && cache.updatedAt === latest.updated_at) {
+      return cache.data
+    }
+
+    // 확인 중 게시/삭제가 발생해도 본문 조회 시점의 최신 말씀을 사용한다.
+    const { data: rows, error: bodyError } = await latestQuery(
+      'id, reference, reference_en, body_ko, body_en, updated_at',
+    )
+    if (bodyError) throw bodyError
+    if (!rows?.length) {
+      saveVerseCache(null)
+      return null
+    }
+    const verse = rowToVerse(rows[0])
+    saveVerseCache({
+      id: verse.id, data: verse, updatedAt: rows[0].updated_at,
+      fetchedAt: Date.now(),
+    })
     return verse
   } catch (err) {
     console.error('말씀 조회 실패:', err)
-    return null
+    throw err
+  } finally {
+    clearTimeout(timer)
   }
+}
+
+export function fetchLatest({ force = false } = {}) {
+  const current = cachedCurrentWeekVerse()
+  if (!force && current) return Promise.resolve(current)
+  if (!inFlight) {
+    inFlight = revalidateLatest().finally(() => { inFlight = null })
+  }
+  return inFlight.catch((err) => {
+    if (force) throw err
+    return cachedVerse()
+  })
 }

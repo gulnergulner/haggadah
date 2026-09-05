@@ -30,7 +30,13 @@ Firebase(nc-haggadah)는 **완전 철수** — 코드에서 제거됨. (nc-hagga
 ### Supabase(하가다) — 말씀
 - `haggadot`: id(=게시일 YYYY-MM-DD) / reference / reference_en / body_ko / body_en / published_at
   - 읽기 공개, 쓰기는 `admins` 테이블 등록자만 (RLS + `is_admin()` security definer)
-  - 성도 화면은 최신 1건만 조회, 30분 localStorage 캐시
+  - 한국 시간 이번 주 주일까지의 최신 1건 표시. 캐시가 금주 말씀이면 즉시 표시하고
+    자동 말씀 통신을 생략한다 (시간 경과/재접속/복귀에도 동일).
+    같은 주 수정/삭제는 말씀 출처 옆 새로고침 버튼으로 확인한다.
+    수정 시각이 바뀐 경우에만 본문 갱신, 실패 시 캐시 유지.
+    금주 말씀 수신 전에는 접속/화면 복귀/온라인 복구 및 화면이 보이는 동안 1분마다
+    id/updated_at 확인, 변경 시에만 본문 갱신. 다음 주일에는 조회 재개.
+    주일 새 게시 전에는 이전 주 말씀 유지, 통신 실패 시 캐시 사용 (8초 타임아웃).
 - 스키마 원본: [supabase/schema.sql](supabase/schema.sql)
 - ⚠️ `user_records` 테이블은 초기 설계의 잔재 — 현재 미사용 (삭제해도 됨)
 
@@ -44,7 +50,7 @@ Firebase(nc-haggadah)는 **완전 철수** — 코드에서 제거됨. (nc-hagga
 
 ### localStorage (기기, 항상 기준=source of truth)
 - `haggadah.v1`: counts(일자별)/total/achievedDays/bestStreak/lang
-- `verseFontDelta`(글자 크기 보정), `haggadah.verseCache`(말씀 30분 캐시),
+- `verseFontDelta`(글자 크기 보정), `haggadah.verseCache`(말씀 본문 + updatedAt 버전 캐시),
   `haggadah.fx.v1`(직전 효과), `haggadah.kakaoNudge`(안내 토스트 1회)
 
 ## 4. 카카오 로그인 (하루핑 방식)

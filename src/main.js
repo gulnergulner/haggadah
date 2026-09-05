@@ -1,7 +1,8 @@
 import './styles/base.css'
 import './styles/main.css'
+import { createElement, RefreshCw } from 'lucide'
 import { createCounter } from './counter.js'
-import { cachedVerse, cacheIsFresh, fetchLatest } from './verse.js'
+import { cachedCurrentWeekVerse, fetchLatest } from './verse.js'
 import { celebrateMinor, celebrateGrand } from './celebrate.js'
 import {
   GOAL, currentStreak, monthlyAchieved,
@@ -32,6 +33,7 @@ const els = {
   toast: $('toast'),
   btnReset: $('btn-reset'),
   btnLang: $('btn-lang'),
+  btnRefreshVerse: $('btn-refresh-verse'),
   btnIncrease: $('btn-increase'),
   fontDecrease: $('font-decrease'),
   fontIncrease: $('font-increase'),
@@ -43,7 +45,9 @@ const els = {
 }
 
 const counter = createCounter()
-let verse = cachedVerse()
+let verse = cachedCurrentWeekVerse()
+let verseLoading = !verse
+els.btnRefreshVerse.append(createElement(RefreshCw, { width: 18, height: 18, 'aria-hidden': 'true' }))
 
 // ---------- 날짜 ----------
 function renderDate() {
@@ -79,6 +83,15 @@ function renderVerse() {
   const ko = lang === 'ko'
   els.btnLang.innerText = ko ? '영문' : 'Korean'
   els.btnReset.innerText = ko ? '리셋' : 'Reset'
+  const refreshLabel = ko ? '말씀 새로고침' : 'Refresh verse'
+  els.btnRefreshVerse.title = refreshLabel
+  els.btnRefreshVerse.setAttribute('aria-label', refreshLabel)
+  els.body.setAttribute('aria-busy', String(verseLoading))
+  if (verseLoading) {
+    els.ref.innerText = ''
+    els.body.innerText = ko ? '말씀을 불러오는 중입니다.' : 'Loading the verse...'
+    return
+  }
   if (!verse) {
     els.ref.innerText = ''
     els.body.innerText = ko
@@ -94,15 +107,38 @@ function renderVerse() {
 
 renderDate()
 renderVerse()
-if (!cacheIsFresh()) {
-  fetchLatest().then((latest) => {
-    if (latest) {
-      verse = latest
-      renderVerse()
-      applyFontSize()
-    }
-  })
+async function refreshVerse(options) {
+  verse = await fetchLatest(options)
+  verseLoading = false
+  renderVerse()
+  applyFontSize()
 }
+refreshVerse()
+
+// 금주 말씀 수신 전과 다음 주 진입 시에만 조회하며, 숨겨진 탭은 건너뛴다.
+setInterval(() => {
+  if (document.visibilityState === 'visible' && !cachedCurrentWeekVerse()) refreshVerse()
+}, 60 * 1000)
+window.addEventListener('online', () => refreshVerse())
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) refreshVerse()
+})
+
+els.btnRefreshVerse.addEventListener('click', async () => {
+  els.btnRefreshVerse.disabled = true
+  els.btnRefreshVerse.setAttribute('aria-busy', 'true')
+  try {
+    await refreshVerse({ force: true })
+    showToast(counter.getPref('lang') === 'ko' ? '최신 말씀을 확인했습니다.' : 'Verse is up to date.')
+  } catch {
+    showToast(counter.getPref('lang') === 'ko'
+      ? '말씀을 확인하지 못했습니다. 연결 상태를 확인해 주세요.'
+      : 'Could not check the verse. Please check your connection.')
+  } finally {
+    els.btnRefreshVerse.disabled = false
+    els.btnRefreshVerse.setAttribute('aria-busy', 'false')
+  }
+})
 
 els.btnLang.addEventListener('click', () => {
   counter.setPref('lang', counter.getPref('lang') === 'ko' ? 'en' : 'ko')
@@ -175,6 +211,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     renderDate()
     renderCount(counter.get())
+    refreshVerse()
   }
 })
 

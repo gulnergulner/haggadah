@@ -31,7 +31,11 @@
   <!-- 말씀 카드: 별도 프레임/내부 스크롤 없이 문서 흐름을 따라 표시 -->
   <main class="verse-main">
     <article class="verse-card">
-      <span id="verse-ref" class="verse-ref"></span>
+      <div class="verse-heading">
+        <span id="verse-ref" class="verse-ref"></span>
+        <button id="btn-refresh-verse" class="verse-refresh" type="button"
+                aria-label="말씀 새로고침" title="말씀 새로고침"></button>
+      </div>
       <p id="verse-body" class="verse-body"></p>
     </article>
   </main>

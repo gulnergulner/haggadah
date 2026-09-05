@@ -76,7 +76,7 @@ $('verse-form').addEventListener('submit', async (e) => {
   const { error } = await supabase.from('haggadot').upsert({
     id: dateStr,
     ...readForm(),
-    published_at: new Date(`${dateStr}T00:00:00`).toISOString(),
+    published_at: new Date(`${dateStr}T00:00:00+09:00`).toISOString(),
     updated_at: new Date().toISOString(),
   })
   if (error) {
