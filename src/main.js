@@ -298,7 +298,10 @@ function showToast(message, ms = 2200) {
   toastTimer = setTimeout(() => { els.toast.hidden = true }, ms)
 }
 
-initShare({ button: els.btnShare, counter, showToast })
+initShare({
+  button: els.btnShare, counter, showToast,
+  getVerse: () => verseLoading ? null : verse,
+})
 
 // ---------- 100회 완료 카드 ----------
 function showDoneCard() {

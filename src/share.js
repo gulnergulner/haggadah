@@ -1,11 +1,25 @@
-export function initShare({ button, counter, showToast }) {
+function formatReference(reference) {
+  // 장:절 표기를 풀어 쓰되, 절 범위·여러 구절·이미 풀어 쓴 출처는 보존한다.
+  return reference.trim().replace(/(\d+)\s*:\s*(\d+(?:\s*[-–~]\s*\d+)?(?:\s*,\s*\d+(?:\s*[-–~]\s*\d+)?)?)/g, '$1장 $2절')
+}
+
+export function initShare({ button, counter, getVerse, showToast }) {
   let sharing = false
   const ko = () => counter.getPref('lang') === 'ko'
 
   button.addEventListener('click', async () => {
     if (sharing) return
-    // 오늘의 현재 카운터만 공유한다. URL이나 페이지 제목은 전달하지 않는다.
-    const text = `${counter.get()}번 읊조렸습니다.`
+    // 버튼을 누른 시점의 카운터와 보고 있는 말씀 전체를 공유한다.
+    const verse = getVerse()
+    const body = verse?.bodyKo?.trim()
+    const reference = verse?.reference?.trim()
+    if (!body || !reference) {
+      showToast(ko()
+        ? '말씀을 불러온 뒤 공유해 주세요.'
+        : 'Please wait for the verse before sharing.')
+      return
+    }
+    const text = `${counter.get()}번 읊조렸습니다.\n${body} [${formatReference(reference)}]`
     sharing = true
     button.disabled = true
     button.setAttribute('aria-busy', 'true')
