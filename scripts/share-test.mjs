@@ -54,7 +54,7 @@ async function setup(t, mode = 'native') {
 test('share sends only current count text, including increments, reset, and English view', async (t) => {
   const { page, errors } = await setup(t)
   await page.locator('#btn-share').click()
-  assert.deepEqual(await page.evaluate(() => window.shared), [{ text: '37번 읊조렸습니다.\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]' }])
+  assert.deepEqual(await page.evaluate(() => window.shared), [{ text: '37번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]' }])
   await page.locator('#btn-increase').click()
   await page.locator('#btn-lang').click()
   assert.equal(await page.locator('#btn-share').innerText(), 'Share')
@@ -62,7 +62,7 @@ test('share sends only current count text, including increments, reset, and Engl
   await page.locator('#btn-reset').click()
   await page.locator('#btn-share').click()
   assert.deepEqual(await page.evaluate(() => window.shared), [
-    { text: '37번 읊조렸습니다.\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]' }, { text: '38번 읊조렸습니다.\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]' }, { text: '0번 읊조렸습니다.\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]' },
+    { text: '37번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]' }, { text: '38번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]' }, { text: '0번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]' },
   ])
   assert.deepEqual(await page.evaluate(() => window.copied), [])
   assert.deepEqual(errors, [])
@@ -72,7 +72,7 @@ for (const mode of ['clipboard', 'unsupported', 'share-error']) {
   test(`${mode} copies only the message and explains how to share on KakaoTalk`, async (t) => {
     const { page, errors } = await setup(t, mode)
     await page.locator('#btn-share').click()
-    assert.deepEqual(await page.evaluate(() => window.copied), ['37번 읊조렸습니다.\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]'])
+    assert.deepEqual(await page.evaluate(() => window.copied), ['37번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]'])
     assert.match(await page.locator('#toast').innerText(), /카카오톡에 붙여 넣어/)
     assert.ok(await page.locator('#btn-share').isEnabled())
     assert.deepEqual(errors, [])
@@ -94,7 +94,7 @@ test('pending share prevents duplicate clicks and preserves count at click time'
   assert.ok(await page.locator('#btn-share').isDisabled())
   await page.evaluate(() => document.getElementById('btn-share').dispatchEvent(new MouseEvent('click')))
   await page.locator('#btn-increase').click()
-  assert.deepEqual(await page.evaluate(() => window.shared), [{ text: '37번 읊조렸습니다.\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]' }])
+  assert.deepEqual(await page.evaluate(() => window.shared), [{ text: '37번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]' }])
   await page.evaluate(() => window.finishShare())
   await page.waitForFunction(() => !document.getElementById('btn-share').disabled)
   assert.equal(await page.locator('#counter').innerText(), '38')
@@ -139,7 +139,7 @@ test('sharing an older verse uses its full text and reference instead of latest 
   await page.waitForFunction(() => document.getElementById('verse-body').innerText.startsWith('네 하나님'))
   await page.locator('#btn-share').click()
   assert.deepEqual(await page.evaluate(() => window.shared), [{
-    text: '37번 읊조렸습니다.\n네 하나님 여호와 앞에서 즐거워하되\n레위인을 저버리지 말지니라 [신명기 12장 18-19절]',
+    text: '37번 읊조렸습니다.\n\n네 하나님 여호와 앞에서 즐거워하되\n레위인을 저버리지 말지니라 [신명기 12장 18-19절]',
   }])
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('haggadah.verseCache')).data.bodyKo),
     '말씀을 읊조려요\n주야로 묵상해요')

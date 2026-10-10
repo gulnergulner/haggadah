@@ -19,7 +19,7 @@ export function initShare({ button, counter, getVerse, showToast }) {
         : 'Please wait for the verse before sharing.')
       return
     }
-    const text = `${counter.get()}번 읊조렸습니다.\n${body} [${formatReference(reference)}]`
+    const text = `${counter.get()}번 읊조렸습니다.\n\n${body} [${formatReference(reference)}]`
     sharing = true
     button.disabled = true
     button.setAttribute('aria-busy', 'true')
