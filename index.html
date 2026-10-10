@@ -19,7 +19,11 @@
       <button id="btn-stats" class="sync-btn" type="button" aria-label="나의 말씀 여정 보기">📊</button>
     </div>
     <div class="date-wrap">
-      <h1 id="date"></h1>
+      <nav class="date-navigation" aria-label="주간 말씀 탐색">
+        <button id="btn-prev-verse" class="verse-nav" type="button" aria-label="이전 말씀" disabled>&lt;</button>
+        <h1 id="date" aria-live="polite"></h1>
+        <button id="btn-next-verse" class="verse-nav" type="button" aria-label="다음 말씀" disabled>&gt;</button>
+      </nav>
       <button id="title-badge" type="button" aria-label="나의 말씀 여정 보기"></button>
     </div>
     <div class="font-controls">
@@ -103,6 +107,8 @@
 
       <p class="stats-today">오늘 <b id="st-today"></b></p>
 
+      <button id="btn-leaderboard" class="leaderboard-open" type="button">🏆 함께 읊조리기 · 랭킹 보기 <span aria-hidden="true">›</span></button>
+
       <div id="st-sync-section" hidden>
         <p id="st-sync-msg" class="stats-sync-msg"></p>
         <button id="btn-stats-kakao" class="btn done-sync-btn stats-kakao" type="button" hidden>💬 카카오로 기록 지키기</button>
@@ -124,6 +130,31 @@
       </a>
 
       <button id="btn-stats-close" class="btn done-btn" type="button">닫기</button>
+    </div>
+  </div>
+
+  <div id="leaderboard-overlay" class="done-overlay" hidden>
+    <section class="done-card leaderboard-card" role="dialog" aria-modal="true" aria-labelledby="leaderboard-title">
+      <h2 id="leaderboard-title">🏆 함께 읊조리기</h2>
+      <p class="leaderboard-description">카카오로 연결한 성도들의 누적 읊조림 순위</p>
+      <p id="leaderboard-summary" class="leaderboard-summary"></p>
+      <div id="leaderboard-mine" class="leaderboard-mine" hidden></div>
+      <p id="leaderboard-status" class="leaderboard-status" role="status"></p>
+      <ol id="leaderboard-list" class="leaderboard-list" aria-label="누적 읊조림 상위 50명"></ol>
+      <p class="leaderboard-note">서버에 저장된 기록을 기준으로 표시해요.<br>같은 횟수는 공동 순위입니다.</p>
+      <button id="btn-leaderboard-login" class="btn done-sync-btn" type="button" hidden>💬 카카오로 연결하고 참여하기</button>
+      <div class="leaderboard-actions">
+        <button id="btn-leaderboard-refresh" class="leaderboard-refresh" type="button">새로고침</button>
+        <button id="btn-leaderboard-close" class="btn done-btn" type="button">닫기</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="login-progress" class="login-progress" hidden>
+    <div class="login-progress-card" role="status" aria-live="polite" aria-atomic="true">
+      <span class="login-spinner" aria-hidden="true"></span>
+      <p id="login-progress-message">카카오 로그인 진행 중…</p>
+      <span class="login-progress-hint">잠시만 기다려 주세요.</span>
     </div>
   </div>
 

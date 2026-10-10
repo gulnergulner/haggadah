@@ -2,7 +2,7 @@ import './styles/base.css'
 import './styles/main.css'
 import { createElement, RefreshCw } from 'lucide'
 import { createCounter } from './counter.js'
-import { cachedCurrentWeekVerse, fetchLatest } from './verse.js'
+import { cachedCurrentWeekVerse, fetchLatest, fetchArchivedVerse } from './verse.js'
 import { celebrateMinor, celebrateGrand } from './celebrate.js'
 import {
   GOAL, currentStreak, monthlyAchieved,
@@ -11,6 +11,7 @@ import {
 } from './journey.js'
 import * as sync from './sync.js'
 import * as wakelock from './wakelock.js'
+import { initLeaderboard } from './leaderboard.js'
 
 // 20/40/60/80회 짧은 피드백 메시지
 const MILESTONE_MSGS = {
@@ -23,6 +24,8 @@ const MILESTONE_MSGS = {
 const $ = (id) => document.getElementById(id)
 const els = {
   date: $('date'),
+  btnPrevVerse: $('btn-prev-verse'),
+  btnNextVerse: $('btn-next-verse'),
   badge: $('title-badge'),
   ref: $('verse-ref'),
   body: $('verse-body'),
@@ -45,15 +48,27 @@ const els = {
 }
 
 const counter = createCounter()
+initLeaderboard()
 let verse = cachedCurrentWeekVerse()
 let verseLoading = !verse
+let latestVerseId = verse?.id
+let browsingHistory = false
+let navigationBusy = false
+let oldestVerseId = null
+let verseRequest = 0
 els.btnRefreshVerse.append(createElement(RefreshCw, { width: 18, height: 18, 'aria-hidden': 'true' }))
 
 // ---------- 날짜 ----------
 function renderDate() {
   const today = new Date()
+  const date = browsingHistory && verse
+    ? verse.id.split('-').map(Number)
+    : [today.getFullYear(), today.getMonth() + 1, today.getDate()]
   els.date.innerText =
-    `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`
+    `${date[0]}년 ${date[1]}월 ${date[2]}일`
+  const busy = navigationBusy || verseLoading || els.btnRefreshVerse.disabled
+  els.btnPrevVerse.disabled = busy || !verse || verse.id === oldestVerseId
+  els.btnNextVerse.disabled = busy || !browsingHistory
 }
 
 // ---------- 헤더 배지: 칭호 · 레벨 · 연속 ----------
@@ -79,10 +94,13 @@ function renderBadge() {
 
 // ---------- 말씀 렌더 ----------
 function renderVerse() {
+  renderDate()
   const lang = counter.getPref('lang')
   const ko = lang === 'ko'
   els.btnLang.innerText = ko ? '영문' : 'Korean'
   els.btnReset.innerText = ko ? '리셋' : 'Reset'
+  els.btnPrevVerse.setAttribute('aria-label', ko ? '이전 말씀' : 'Previous verse')
+  els.btnNextVerse.setAttribute('aria-label', ko ? '다음 말씀' : 'Next verse')
   const refreshLabel = ko ? '말씀 새로고침' : 'Refresh verse'
   els.btnRefreshVerse.title = refreshLabel
   els.btnRefreshVerse.setAttribute('aria-label', refreshLabel)
@@ -108,12 +126,57 @@ function renderVerse() {
 renderDate()
 renderVerse()
 async function refreshVerse(options) {
-  verse = await fetchLatest(options)
+  if (navigationBusy || (browsingHistory && !options?.force)) return
+  const request = ++verseRequest
+  const refreshed = browsingHistory
+    ? await fetchArchivedVerse(verse.id)
+    : await fetchLatest(options)
+  if (request !== verseRequest) return
+  if (browsingHistory && !refreshed) throw new Error('말씀이 삭제되었습니다.')
+  verse = refreshed
+  if (!browsingHistory) latestVerseId = verse?.id
   verseLoading = false
   renderVerse()
   applyFontSize()
 }
 refreshVerse()
+
+async function navigateVerse(direction) {
+  if (navigationBusy || verseLoading || !verse) return
+  navigationBusy = true
+  ++verseRequest // 먼저 시작한 자동 조회가 탐색한 말씀을 덮어쓰지 않도록 한다.
+  els.btnRefreshVerse.disabled = true
+  els.body.setAttribute('aria-busy', 'true')
+  renderDate()
+  try {
+    const selected = await fetchArchivedVerse(verse.id, direction)
+    if (!selected) {
+      if (direction === 'previous') oldestVerseId = verse.id
+      showToast(counter.getPref('lang') === 'ko'
+        ? (direction === 'previous' ? '가장 이전 말씀입니다.' : '최신 말씀입니다.')
+        : (direction === 'previous' ? 'This is the earliest verse.' : 'This is the latest verse.'))
+      if (direction === 'next') {
+        browsingHistory = false
+        latestVerseId = verse.id
+      }
+      return
+    }
+    verse = selected
+    browsingHistory = selected.id < latestVerseId
+    if (!browsingHistory) latestVerseId = selected.id
+  } catch {
+    showToast(counter.getPref('lang') === 'ko'
+      ? '말씀을 불러오지 못했습니다. 연결 상태를 확인해 주세요.'
+      : 'Could not load the verse. Please check your connection.')
+  } finally {
+    navigationBusy = false
+    els.btnRefreshVerse.disabled = false
+    renderVerse()
+    applyFontSize()
+  }
+}
+els.btnPrevVerse.addEventListener('click', () => navigateVerse('previous'))
+els.btnNextVerse.addEventListener('click', () => navigateVerse('next'))
 
 // 금주 말씀 수신 전과 다음 주 진입 시에만 조회하며, 숨겨진 탭은 건너뛴다.
 setInterval(() => {
@@ -127,9 +190,12 @@ window.addEventListener('pageshow', (event) => {
 els.btnRefreshVerse.addEventListener('click', async () => {
   els.btnRefreshVerse.disabled = true
   els.btnRefreshVerse.setAttribute('aria-busy', 'true')
+  renderDate()
   try {
     await refreshVerse({ force: true })
-    showToast(counter.getPref('lang') === 'ko' ? '최신 말씀을 확인했습니다.' : 'Verse is up to date.')
+    showToast(counter.getPref('lang') === 'ko'
+      ? (browsingHistory ? '말씀을 확인했습니다.' : '최신 말씀을 확인했습니다.')
+      : 'Verse is up to date.')
   } catch {
     showToast(counter.getPref('lang') === 'ko'
       ? '말씀을 확인하지 못했습니다. 연결 상태를 확인해 주세요.'
@@ -137,6 +203,7 @@ els.btnRefreshVerse.addEventListener('click', async () => {
   } finally {
     els.btnRefreshVerse.disabled = false
     els.btnRefreshVerse.setAttribute('aria-busy', 'false')
+    renderDate()
   }
 })
 

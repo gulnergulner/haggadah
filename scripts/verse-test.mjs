@@ -52,10 +52,17 @@ async function setup(t, { rows = [previous], cache = cacheFor(previous), now = S
     state.requests.push(columns)
     if (state.gate) await state.gate
     if (state.offline) return route.abort('internetdisconnected')
-    const cutoff = url.searchParams.get('id')
-    assert.ok(cutoff?.startsWith('lte.'))
-    const selected = state.rows.filter((r) => r.id <= cutoff.slice(4))
-      .sort((a, b) => b.id.localeCompare(a.id)).slice(0, 1)
+    const filters = url.searchParams.getAll('id')
+    assert.ok(filters.some((filter) => filter.startsWith('lte.')))
+    const selected = state.rows.filter((r) => filters.every((filter) => {
+      const [operator, value] = filter.split('.')
+      if (operator === 'lte') return r.id <= value
+      if (operator === 'lt') return r.id < value
+      if (operator === 'gt') return r.id > value
+      if (operator === 'eq') return r.id === value
+      throw new Error(`Unexpected filter: ${filter}`)
+    })).sort((a, b) => url.searchParams.get('order') === 'id.asc'
+      ? a.id.localeCompare(b.id) : b.id.localeCompare(a.id)).slice(0, 1)
     await route.fulfill({ json: selected.map((r) => Object.fromEntries(
       columns.split(',').map((column) => [column, r[column]]),
     )) })
@@ -354,4 +361,79 @@ test('initial visit downloads one body and fits desktop layout', async (t) => {
   await s.shown(current.body_ko)
   assert.equal(s.requests.length, 2)
   assert.ok(await s.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+})
+
+test('archive navigation skips missing weeks, preserves latest cache and today count', async (t) => {
+  const older = row('2026-08-16', 'Older verse')
+  const s = await setup(t, {
+    rows: [older, previous, current, row('2026-09-13', 'Future verse')],
+    cache: cacheFor(current),
+  })
+  await s.open()
+  await s.shown(current.body_ko)
+  assert.ok(await s.page.locator('#btn-next-verse').isDisabled())
+  await s.page.locator('#btn-increase').click()
+  await s.page.locator('#btn-prev-verse').click()
+  await s.shown(previous.body_ko)
+  assert.equal(await s.page.locator('#date').innerText(), '2026년 8월 30일')
+  assert.equal((await s.readCache()).data.id, current.id)
+  await s.page.evaluate(() => {
+    window.dispatchEvent(new Event('online'))
+    document.dispatchEvent(new Event('visibilitychange'))
+  })
+  await s.page.clock.runFor(120_000)
+  await s.shown(previous.body_ko)
+  assert.equal(s.requests.length, 1)
+  await s.page.locator('#btn-prev-verse').click()
+  await s.shown(older.body_ko)
+  await s.page.locator('#btn-prev-verse').click()
+  await s.page.waitForFunction(() => document.getElementById('btn-prev-verse').disabled
+    && !document.getElementById('btn-next-verse').disabled)
+  await s.page.locator('#btn-next-verse').click()
+  await s.shown(previous.body_ko)
+  await s.page.locator('#btn-next-verse').click()
+  await s.shown(current.body_ko)
+  assert.ok(await s.page.locator('#btn-next-verse').isDisabled())
+  assert.equal(await s.page.locator('#counter').innerText(), '1')
+  assert.equal(await s.page.locator('#date').innerText(), '2026년 9월 6일')
+  await s.page.screenshot({ path: '/tmp/haggadah-verse-navigation.png' })
+  for (const width of [320, 375, 768]) {
+    await s.page.setViewportSize({ width, height: 667 })
+    const bounds = await s.page.evaluate(() => {
+      const ids = ['btn-stats', 'title-badge', 'font-decrease', 'font-increase',
+        'btn-prev-verse', 'date', 'btn-next-verse']
+      return ids.map((id) => {
+        const { x, y, width, height } = document.getElementById(id).getBoundingClientRect()
+        return { id, x, y, width, height }
+      })
+    })
+    for (const b of bounds) {
+      assert.ok(b.x >= 0 && b.x + b.width <= width, `${b.id} fits at ${width}px`)
+      for (const other of bounds.filter((item) => item.id !== b.id)) {
+        assert.ok(b.x + b.width <= other.x || other.x + other.width <= b.x
+          || b.y + b.height <= other.y || other.y + other.height <= b.y,
+        `${b.id} does not overlap ${other.id} at ${width}px`)
+      }
+    }
+  }
+})
+
+test('archive refresh updates selected verse; network errors preserve it and allow retry', async (t) => {
+  const s = await setup(t, { rows: [previous, current], cache: cacheFor(current) })
+  await s.open()
+  await s.shown(current.body_ko)
+  await s.page.locator('#btn-prev-verse').click()
+  await s.shown(previous.body_ko)
+  s.rows = [row(previous.id, 'Updated archive'), current]
+  await s.page.locator('#btn-refresh-verse').click()
+  await s.shown('Updated archive')
+  assert.equal((await s.readCache()).data.id, current.id)
+  s.offline = true
+  await s.page.locator('#btn-next-verse').click()
+  await s.page.waitForFunction(() => !document.getElementById('btn-next-verse').disabled)
+  await s.shown('Updated archive')
+  assert.match(await s.page.locator('#toast').innerText(), /불러오지 못했습니다/)
+  s.offline = false
+  await s.page.locator('#btn-next-verse').click()
+  await s.shown(current.body_ko)
 })

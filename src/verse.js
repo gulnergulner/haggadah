@@ -92,3 +92,25 @@ export function fetchLatest({ force = false } = {}) {
     return cachedVerse()
   })
 }
+
+// 지난 말씀 탐색은 최신 말씀의 영구 캐시를 덮어쓰지 않는다.
+export async function fetchArchivedVerse(id, direction = null) {
+  if (!isConfigured) throw new Error('말씀 서버가 설정되지 않았습니다.')
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    let query = supabase.from('haggadot')
+      .select('id, reference, reference_en, body_ko, body_en')
+      .lte('id', currentWeekKey())
+    if (direction === 'previous') query = query.lt('id', id)
+    else if (direction === 'next') query = query.gt('id', id)
+    else query = query.eq('id', id)
+    const { data, error } = await query
+      .order('id', { ascending: direction === 'next' })
+      .limit(1).abortSignal(controller.signal)
+    if (error) throw error
+    return data?.length ? rowToVerse(data[0]) : null
+  } finally {
+    clearTimeout(timer)
+  }
+}

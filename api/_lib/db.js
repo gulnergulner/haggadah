@@ -54,3 +54,36 @@ export async function saveHaggadah(id, data) {
     WHERE id = ${id}
   `
 }
+
+/** 누적 읊조림 상위 50명과 로그인 사용자의 순위. 원본 ID/개인 기록은 반환하지 않는다. */
+export async function getLeaderboard(uid = null) {
+  const sql = getSql()
+  const rows = await sql`
+    WITH records AS (
+      SELECT id, COALESCE(NULLIF(nickname, ''), '이름 없는 성도') AS nickname,
+        CASE WHEN jsonb_typeof(haggadah->'total') = 'number'
+          AND (haggadah->>'total') ~ '^[0-9]{1,16}$'
+          THEN (haggadah->>'total')::numeric ELSE 0 END AS total
+      FROM "HarupingUser"
+    ), ranked AS (
+      SELECT nickname, total, id,
+        RANK() OVER (ORDER BY total DESC) AS rank,
+        ROW_NUMBER() OVER (ORDER BY total DESC, nickname, id) AS position,
+        COUNT(*) OVER () AS participants
+      FROM records WHERE total > 0
+    )
+    SELECT nickname, total, rank, position, participants,
+      COALESCE(id = ${uid}, false) AS "isMe"
+    FROM ranked WHERE position <= 50 OR id = ${uid}
+    ORDER BY position
+  `
+  const entry = (row) => ({
+    rank: Number(row.rank), nickname: row.nickname,
+    total: Number(row.total), isMe: row.isMe,
+  })
+  return {
+    entries: rows.filter((row) => Number(row.position) <= 50).map(entry),
+    myEntry: rows.find((row) => row.isMe) ? entry(rows.find((row) => row.isMe)) : null,
+    participants: Number(rows[0]?.participants ?? 0),
+  }
+}

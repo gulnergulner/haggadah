@@ -19,6 +19,33 @@ let xpReady = !SYNC_ENABLED
 let counter = null
 let onChange = null
 let pushTimer = null
+let loginPending = false
+const loginButtons = ['btn-stats-kakao', 'btn-done-sync', 'btn-leaderboard-login']
+
+function showLoginProgress(message = '카카오 로그인 진행 중…') {
+  document.getElementById('login-progress-message').textContent = message
+  document.getElementById('login-progress').hidden = false
+  for (const id of loginButtons) {
+    const button = document.getElementById(id)
+    button.disabled = true
+    button.setAttribute('aria-busy', 'true')
+  }
+}
+
+function clearLoginProgress() {
+  loginPending = false
+  document.getElementById('login-progress').hidden = true
+  for (const id of loginButtons) {
+    const button = document.getElementById(id)
+    button.disabled = false
+    button.removeAttribute('aria-busy')
+  }
+}
+
+// 로그인 화면에서 뒤로 돌아온 경우 BFCache에 남아 있는 대기 표시를 해제한다.
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) clearLoginProgress()
+})
 
 export function isLoggedIn() {
   return loggedIn
@@ -46,6 +73,7 @@ export function initSync(opts) {
   // 카카오 로그인에서 돌아온 경우 URL 정리 + 실패 안내
   const params = new URLSearchParams(location.search)
   const justLoggedIn = params.get('login') === 'ok'
+  if (justLoggedIn) showLoginProgress('카카오 로그인 확인 중…')
   if (params.has('login')) {
     const failed = params.get('login') === 'failed'
     history.replaceState(null, '', location.pathname)
@@ -72,6 +100,7 @@ export function initSync(opts) {
       xpReady = true
       opts.onUser?.(false, false)
     })
+    .finally(() => { if (justLoggedIn) clearLoginProgress() })
 
   // 화면을 벗어날 때 저장 대기분을 즉시 반영
   document.addEventListener('visibilitychange', () => {
@@ -80,7 +109,13 @@ export function initSync(opts) {
 }
 
 export function login() {
-  location.href = '/api/auth/kakao'
+  if (loginPending) return
+  loginPending = true
+  showLoginProgress()
+  // 메시지가 한 프레임 그려진 뒤 페이지를 이동한다.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (loginPending) location.href = '/api/auth/kakao'
+  }))
 }
 
 /** 닉네임 변경 (하루핑과 공유되는 닉네임) */
@@ -116,12 +151,13 @@ export function schedulePush() {
   pushTimer = setTimeout(flushPush, PUSH_DELAY_MS)
 }
 
-export async function flushPush() {
+export async function flushPush({ signal } = {}) {
   if (!loggedIn) return
   clearTimeout(pushTimer)
   pushTimer = null
   try {
     await fetch('/api/haggadah-state', {
+      signal,
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(counter.exportState()),
