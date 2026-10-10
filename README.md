@@ -52,6 +52,65 @@ npm run build
 firebase deploy --only hosting
 ```
 
+## 텔레그램으로 말씀 게시
+
+기존 관리자 화면 대신 **@haggadah_admin_bot**과의 개인 대화에 아래 내용을 한 메시지로
+보내면 같은 `haggadot` 테이블에 저장된다. 게시 권한은 `TELEGRAM_ADMIN_IDS`에 등록한
+숫자 사용자 ID로 제한하며, 현재 관리자는 `62340378`이다.
+
+```text
+2026-10-04
+
+[신15:4] 네가 만일 네 하나님 여호와의 말씀만 듣고 내가 오늘 네게 내리는 그 명령을 다 지켜 행하면 네 하나님 여호와께서 네게 기업으로 주신 땅에서 네가 반드시 복을 받으리니 너희 중에 가난한 자가 없으리라
+
+[Dt 15:4, NIV] However, there need be no poor people among you, for in the land the LORD your God is giving you to possess as your inheritance, he will richly bless you,
+```
+
+- 날짜는 보낸 날짜가 아니라 첫 줄의 날짜를 사용한다. 한국 시간 해당 날짜 00:00을
+  `published_at`으로 저장하므로 기존 웹 관리자에서 `2026-10-04`로 게시한 것과 같다.
+- 한글·영문 성경 약칭을 정식 이름으로 바꾸고, 본문 전체와 본문 내부 줄바꿈은 보존한다.
+  영문 출처의 `NIV` 같은 번역판 표시는 본문에 넣지 않는다.
+- 한글·영문 구절이 다르거나 날짜·형식이 잘못되면 저장하지 않고 수정 안내를 보낸다.
+  여러 절은 `[신15:4-5]` 범위나 각 절의 `[출처]`로 입력할 수 있다.
+- 같은 날짜를 다시 보내거나 텔레그램 메시지를 수정하면 해당 날짜의 말씀을 수정한다.
+  중복 수신은 다시 저장하지 않고, 늦게 도착한 이전 메시지는 최신 메시지를 덮어쓰지 않는다.
+- 미래 주일 말씀도 미리 등록할 수 있으며 기존 성도 화면의 주일 기준 표시 규칙을 따른다.
+  이미 캐시된 금주 말씀의 수정은 앱의 말씀 새로고침 버튼으로 확인한다.
+- `/start`, `/help`로 입력 형식을 확인할 수 있다. 미등록 사용자는 본인의 숫자 ID와
+  권한 안내만 받으며 게시할 수 없다. 그룹·채널에서는 게시하지 않는다.
+
+### 연결 설정 (최초 1회)
+
+1. **말씀용** Supabase 프로젝트 `wjyiovkeduosubtzflqe`의 SQL Editor에서
+   [supabase/telegram-bot.sql](supabase/telegram-bot.sql)을 실행한다. 원자적 저장 함수와
+   중복 수신 기록을 만들며 서버용 `service_role`만 저장 함수를 호출할 수 있다.
+2. 로컬 `.env.local`과 Vercel Production 환경 변수에 아래 값을 설정한다:
+
+   | 환경 변수 | 값 |
+   | --- | --- |
+   | `TELEGRAM_ADMIN_IDS` | `62340378` (여러 명은 쉼표로 구분) |
+   | `TELEGRAM_WEBHOOK_SECRET` | 로컬에 생성한 비밀 문자열과 같은 값 |
+   | `HAGGADAH_SUPABASE_SERVICE_ROLE_KEY` | 말씀 프로젝트의 서버용 service_role 키 |
+   | `HAGGADAH_SUPABASE_URL` | 기본값 `https://wjyiovkeduosubtzflqe.supabase.co`, 보통 생략 |
+
+   봇 토큰 `TELEGRAM_BOT_TOKEN`은 로컬 `.env.local`에만 필요하다. 운영 웹훅은 응답 JSON으로
+   답장하므로 토큰을 사용하지 않는다. 기존 `.env`의 개인 기록용 `SUPABASE_SERVICE_KEY`와
+   `DATABASE_URL`은 말씀 게시에 사용하지 않는다. 서버 키는 `VITE_` 접두사로 등록하지 않는다.
+3. 코드와 환경 변수를 배포한다. 웹훅 주소는
+   `https://haggadah.godagent.net/api/telegram-webhook`이다.
+4. 로컬에서 `npm run telegram:setup`을 실행하면 기존 봇에 웹훅을 등록한다.
+   입력·수정 메시지만 받으며, 대기 중인 메시지를 삭제하지 않는다. 다른 도메인을 쓴다면
+   `TELEGRAM_WEBHOOK_URL`을 HTTPS 주소로 설정한다.
+5. 봇에 예시 형식으로 메시지를 보내 게시 완료 답장을 확인한다. 관리자 화면의 같은 날짜
+   항목과 성도 화면의 말씀을 확인한다. 테스트도 실제 게시되므로 날짜와 내용을 확인하고 보낸다.
+
+구현은 [Telegram 공식 웹훅 API](https://core.telegram.org/bots/api#setwebhook)의 비밀 헤더와
+[웹훅 응답으로 답장하기](https://core.telegram.org/bots/api#making-requests-when-getting-updates)를 사용한다.
+
+검증: `node --test scripts/telegram-test.mjs scripts/telegram-db-test.mjs`.
+DB 검증은 로컬 PostgreSQL의 별도 임시 DB만 사용하며 운영에는 연결하지 않는다.
+PostgreSQL 경로를 자동으로 찾지 못하면 `PG_BIN`을 `initdb`와 `pg_ctl`이 있는 디렉토리로 지정한다.
+
 ## 카카오 로그인 + 하루핑 공유 DB 동기화
 
 카카오 로그인은 하루핑(haruping.godagent.net)과 동일한 **자체 OAuth + HMAC 세션

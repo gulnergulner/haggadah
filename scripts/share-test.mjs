@@ -163,3 +163,23 @@ test('missing verse does not open the share sheet or copy an incomplete message'
   assert.ok(await page.locator('#btn-share').isEnabled())
   assert.deepEqual(errors, [])
 })
+
+for (const mode of ['native', 'clipboard']) {
+  test(`${mode} ends at the closing bracket even when stored verse has trailing whitespace`, async (t) => {
+    const { page, errors } = await setup(t, mode)
+    await page.evaluate(() => {
+      const cache = JSON.parse(localStorage.getItem('haggadah.verseCache'))
+      cache.data.bodyKo += '\r\n\n \t'
+      cache.data.reference += '\r\n \t'
+      localStorage.setItem('haggadah.verseCache', JSON.stringify(cache))
+      window.dispatchEvent(new Event('online'))
+    })
+    await page.waitForFunction(() => !document.getElementById('btn-prev-verse').disabled)
+    await page.locator('#btn-share').click()
+    const text = await page.evaluate((mode) => mode === 'native' ? window.shared[0].text : window.copied[0], mode)
+    assert.equal(text, '37번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]')
+    assert.equal(text.at(-1), ']')
+    assert.equal(text, text.trimEnd())
+    assert.deepEqual(errors, [])
+  })
+}
