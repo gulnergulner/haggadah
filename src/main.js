@@ -1,6 +1,6 @@
 import './styles/base.css'
 import './styles/main.css'
-import { createElement, RefreshCw } from 'lucide'
+import { createElement, RefreshCw, ChevronLeft, ChevronRight, Minus, Plus, ChartNoAxesColumnIncreasing } from 'lucide'
 import { createCounter } from './counter.js'
 import { cachedCurrentWeekVerse, fetchLatest, fetchArchivedVerse } from './verse.js'
 import { celebrateMinor, celebrateGrand } from './celebrate.js'
@@ -58,7 +58,20 @@ let browsingHistory = false
 let navigationBusy = false
 let oldestVerseId = null
 let verseRequest = 0
-els.btnRefreshVerse.append(createElement(RefreshCw, { width: 18, height: 18, 'aria-hidden': 'true' }))
+for (const [button, icon, size] of [
+  [els.btnPrevVerse, ChevronLeft, 22],
+  [els.btnNextVerse, ChevronRight, 22],
+  [els.fontDecrease, Minus, 18],
+  [els.fontIncrease, Plus, 18],
+  [els.btnStats, ChartNoAxesColumnIncreasing, 20],
+  [els.btnRefreshVerse, RefreshCw, 18],
+  [els.btnIncrease, Plus, 24],
+]) {
+  button.prepend(createElement(icon, {
+    width: size, height: size, 'stroke-width': 1.8,
+    'aria-hidden': 'true', focusable: 'false',
+  }))
+}
 
 // ---------- 날짜 ----------
 function renderDate() {
@@ -105,6 +118,7 @@ function renderVerse() {
   els.btnShare.setAttribute('aria-label', ko ? '카카오톡으로 읊조림 기록 공유' : 'Share your count on KakaoTalk')
   els.btnPrevVerse.setAttribute('aria-label', ko ? '이전 말씀' : 'Previous verse')
   els.btnNextVerse.setAttribute('aria-label', ko ? '다음 말씀' : 'Next verse')
+  els.btnIncrease.setAttribute('aria-label', ko ? '읊조림 횟수 1회 추가' : 'Add one recitation')
   const refreshLabel = ko ? '말씀 새로고침' : 'Refresh verse'
   els.btnRefreshVerse.title = refreshLabel
   els.btnRefreshVerse.setAttribute('aria-label', refreshLabel)
