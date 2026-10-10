@@ -240,6 +240,14 @@ body {
 }
 .btn-lang:active { background: var(--blue-deep); }
 
+.btn-share {
+  background: #fee500;
+  color: #191919;
+  box-shadow: 0 4px 14px rgba(254, 229, 0, 0.3);
+}
+.btn-share:active { background: #f2d900; }
+.btn-share:disabled { opacity: 0.6; cursor: wait; }
+
 .btn-increase {
   background: var(--green);
   box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35);

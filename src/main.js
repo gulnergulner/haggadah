@@ -12,6 +12,7 @@ import {
 import * as sync from './sync.js'
 import * as wakelock from './wakelock.js'
 import { initLeaderboard } from './leaderboard.js'
+import { initShare } from './share.js'
 
 // 20/40/60/80회 짧은 피드백 메시지
 const MILESTONE_MSGS = {
@@ -36,6 +37,7 @@ const els = {
   toast: $('toast'),
   btnReset: $('btn-reset'),
   btnLang: $('btn-lang'),
+  btnShare: $('btn-share'),
   btnRefreshVerse: $('btn-refresh-verse'),
   btnIncrease: $('btn-increase'),
   fontDecrease: $('font-decrease'),
@@ -99,6 +101,8 @@ function renderVerse() {
   const ko = lang === 'ko'
   els.btnLang.innerText = ko ? '영문' : 'Korean'
   els.btnReset.innerText = ko ? '리셋' : 'Reset'
+  els.btnShare.innerText = ko ? '공유' : 'Share'
+  els.btnShare.setAttribute('aria-label', ko ? '카카오톡으로 읊조림 기록 공유' : 'Share your count on KakaoTalk')
   els.btnPrevVerse.setAttribute('aria-label', ko ? '이전 말씀' : 'Previous verse')
   els.btnNextVerse.setAttribute('aria-label', ko ? '다음 말씀' : 'Next verse')
   const refreshLabel = ko ? '말씀 새로고침' : 'Refresh verse'
@@ -293,6 +297,8 @@ function showToast(message, ms = 2200) {
   clearTimeout(toastTimer)
   toastTimer = setTimeout(() => { els.toast.hidden = true }, ms)
 }
+
+initShare({ button: els.btnShare, counter, showToast })
 
 // ---------- 100회 완료 카드 ----------
 function showDoneCard() {
