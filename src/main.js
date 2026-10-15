@@ -64,7 +64,7 @@ for (const [button, icon, size] of [
   [els.fontDecrease, Minus, 18],
   [els.fontIncrease, Plus, 18],
   [els.btnStats, ChartNoAxesColumnIncreasing, 20],
-  [els.btnRefreshVerse, RefreshCw, 18],
+  [els.btnRefreshVerse, RefreshCw, 16],
   [els.btnIncrease, Plus, 24],
 ]) {
   button.prepend(createElement(icon, {

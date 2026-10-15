@@ -141,20 +141,26 @@ body {
 }
 
 .verse-refresh {
-  flex: 0 0 36px;
-  width: 36px;
-  height: 36px;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  color: var(--text-soft);
+  border-radius: 12px;
+  color: #9ca3af;
   background: transparent;
+  touch-action: manipulation;
 }
 
 .verse-refresh:hover { background: var(--badge-bg); }
 .verse-refresh:focus-visible { outline: 2px solid var(--badge-text); }
 .verse-refresh:disabled { opacity: 0.5; cursor: wait; }
+
+@media (max-width: 360px) {
+  .date-navigation { gap: 0; }
+  #date { font-size: 14px; }
+}
 
 .verse-ref {
   display: block;
