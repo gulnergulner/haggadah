@@ -375,7 +375,7 @@ test('archive navigation skips missing weeks, preserves latest cache and today c
   await s.page.locator('#btn-increase').click()
   await s.page.locator('#btn-prev-verse').click()
   await s.shown(previous.body_ko)
-  assert.equal(await s.page.locator('#date').innerText(), '2026년 8월 30일')
+  assert.equal(await s.page.locator('#date').innerText(), '2026.08.30')
   assert.equal((await s.readCache()).data.id, current.id)
   await s.page.evaluate(() => {
     window.dispatchEvent(new Event('online'))
@@ -395,7 +395,7 @@ test('archive navigation skips missing weeks, preserves latest cache and today c
   await s.shown(current.body_ko)
   assert.ok(await s.page.locator('#btn-next-verse').isDisabled())
   assert.equal(await s.page.locator('#counter').innerText(), '1')
-  assert.equal(await s.page.locator('#date').innerText(), '2026년 9월 6일')
+  assert.equal(await s.page.locator('#date').innerText(), '2026.09.06')
   await s.page.screenshot({ path: '/tmp/haggadah-verse-navigation.png' })
   for (const width of [320, 375, 768]) {
     await s.page.setViewportSize({ width, height: 667 })

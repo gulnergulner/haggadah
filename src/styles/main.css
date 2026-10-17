@@ -30,11 +30,12 @@ body {
 /* ---------- 상단: 날짜 + 칭호 ---------- */
 .top {
   position: relative;
-  display: grid;
-  grid-template-columns: 2.2rem minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
-  gap: 4px 8px;
-  padding: calc(14px + env(safe-area-inset-top)) 16px 10px;
+  gap: 8px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 8px;
+  flex-shrink: 0;
+  min-height: calc(62px + env(safe-area-inset-top));
 }
 
 .date-wrap {
@@ -42,19 +43,22 @@ body {
 }
 
 .date-navigation {
-  grid-column: 1 / -1;
-  grid-row: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 2px;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .verse-nav {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
+  width: 36px;
   height: 44px;
   flex-shrink: 0;
   border-radius: 12px;
@@ -67,30 +71,32 @@ body {
 .verse-nav:disabled { opacity: 0.3; cursor: default; }
 
 #date {
-  font-size: clamp(16px, 4.5vw, 22px);
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 #title-badge {
-  grid-column: 2;
-  grid-row: 2;
-  justify-self: center;
-  max-width: 100%;
+  min-width: 0;
+  max-width: min(260px, calc((100vw - 440px) / 2));
   font-size: clamp(13px, 3.6vw, 15px);
   font-weight: 700;
   color: var(--badge-text);
   background: var(--badge-bg);
   padding: 3px 12px;
   border-radius: 999px;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .font-controls {
-  grid-column: 3;
-  grid-row: 2;
+  margin-left: auto;
   display: flex;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .font-size-btn {
@@ -141,8 +147,10 @@ body {
 }
 
 .verse-refresh {
-  flex: 0 0 44px;
-  width: 44px;
+  position: absolute;
+  left: calc(100% + 2px);
+  flex: 0 0 36px;
+  width: 36px;
   height: 44px;
   display: inline-flex;
   align-items: center;
@@ -157,9 +165,19 @@ body {
 .verse-refresh:focus-visible { outline: 2px solid var(--badge-text); }
 .verse-refresh:disabled { opacity: 0.5; cursor: wait; }
 
-@media (max-width: 360px) {
+@media (max-width: 760px) {
+  #title-badge { display: none; }
+  .top { gap: 4px; padding-inline: 10px; }
   .date-navigation { gap: 0; }
-  #date { font-size: 14px; }
+  #date { font-size: 15px; }
+  .verse-nav, .verse-refresh { width: 28px; flex-basis: 28px; }
+  .font-controls { gap: 2px; }
+  .top .sync-btn, .font-size-btn { width: 32px; height: 44px; }
+}
+
+@media (max-width: 360px) {
+  .verse-nav, .verse-refresh { width: 24px; flex-basis: 24px; }
+  .font-size-btn { width: 26px; }
 }
 
 .verse-ref {

@@ -80,7 +80,7 @@ function renderDate() {
     ? verse.id.split('-').map(Number)
     : [today.getFullYear(), today.getMonth() + 1, today.getDate()]
   els.date.innerText =
-    `${date[0]}년 ${date[1]}월 ${date[2]}일`
+    `${date[0]}.${String(date[1]).padStart(2, '0')}.${String(date[2]).padStart(2, '0')}`
   const busy = navigationBusy || verseLoading || els.btnRefreshVerse.disabled
   els.btnPrevVerse.disabled = busy || !verse || verse.id === oldestVerseId
   els.btnNextVerse.disabled = busy || !browsingHistory
