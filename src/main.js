@@ -137,7 +137,7 @@ function renderVerse() {
   }
   const en = !ko && verse.bodyEn
   const ref = (en ? verse.referenceEn : verse.reference) || ''
-  els.ref.innerText = ref ? `📖${ref}` : ''
+  els.ref.innerText = ref ? `📖 ${ref}` : ''
   els.body.innerText = (en ? verse.bodyEn : verse.bodyKo) || ''
 }
 
