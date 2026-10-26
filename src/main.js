@@ -248,7 +248,7 @@ function fitFontSize() {
   let best = MIN_FONT
   while (lo <= hi) {
     const mid = Math.floor((lo + hi) / 2)
-    els.body.style.fontSize = `${mid}px`
+    verseCard.style.fontSize = `${mid}px`
     if (verseCard.scrollHeight <= avail) {
       best = mid
       lo = mid + 1
@@ -262,7 +262,7 @@ function fitFontSize() {
 function applyFontSize() {
   const fit = fitFontSize()
   const size = Math.max(MIN_FONT, Math.min(fit, fit + fontDelta))
-  els.body.style.fontSize = `${size}px`
+  verseCard.style.fontSize = `${size}px`
 }
 
 els.fontIncrease.addEventListener('click', () => {

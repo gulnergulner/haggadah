@@ -180,10 +180,14 @@ body {
   .font-size-btn { width: 26px; }
 }
 
+.verse-ref,
+.verse-body {
+  font-family: "Noto Serif KR", Georgia, serif;
+  font-weight: 700;
+}
+
 .verse-ref {
   display: block;
-  font-size: clamp(15px, 4vw, 19px);
-  font-weight: 700;
   color: var(--badge-text);
   min-width: 0;
   overflow-wrap: anywhere;
@@ -195,8 +199,6 @@ body {
 }
 
 .verse-body {
-  font-family: "Noto Serif KR", Georgia, serif;
-  font-weight: 700;
   line-height: 1.75;
   word-break: keep-all;
   white-space: pre-line; /* 관리자가 입력한 줄바꿈 유지 */
