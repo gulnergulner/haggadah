@@ -190,22 +190,25 @@ body {
 
 @media (max-width: 760px) {
   #title-badge { display: none; }
-  .top { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-inline: 16px; }
-  .top .sync-controls { grid-column: 1; grid-row: 1; justify-self: start; }
-  .font-controls { grid-column: 2; grid-row: 1; }
-  .date-navigation { position: static; transform: none; grid-column: 1 / -1; grid-row: 2; width: 100%; gap: 4px; }
-  .date-title { flex: 1; }
-  #btn-calendar { width: 100%; }
-  .date-navigation .verse-nav, .date-navigation .verse-refresh { width: 36px; flex-basis: 36px; }
-  #date { font-size: 15px; }
-  .verse-nav, .verse-refresh { width: 28px; flex-basis: 28px; }
-  .font-controls { gap: 2px; }
-  .top .sync-btn, .font-size-btn { width: 32px; height: 44px; }
+  .top { gap: 4px; padding-inline: 10px; min-height: calc(58px + env(safe-area-inset-top)); }
+  .top .sync-controls { flex: 0 0 auto; }
+  .date-navigation { position: static; transform: none; flex: 1 1 auto; min-width: 0; gap: 1px; padding: 3px; }
+  .date-title { flex: 1 1 auto; min-width: 0; }
+  .date-eyebrow { display: none; }
+  #btn-calendar { width: 100%; min-width: 0; min-height: 38px; padding: 4px 2px; }
+  .date-label { gap: 3px; }
+  #date { font-size: 14px; }
+  .verse-nav, .verse-refresh { width: 28px; height: 38px; flex: 0 0 28px; }
+  .font-controls { flex: 0 0 auto; gap: 2px; margin-left: 0; }
+  .top .sync-btn, .font-size-btn { width: 30px; height: 38px; }
 }
 
 @media (max-width: 360px) {
+  .top { gap: 2px; padding-inline: 8px; }
   .verse-nav, .verse-refresh { width: 24px; flex-basis: 24px; }
-  .font-size-btn { width: 26px; }
+  .top .sync-btn, .font-size-btn { width: 26px; }
+  .date-navigation { gap: 0; }
+  #date { font-size: 13px; }
 }
 
 .verse-ref,
