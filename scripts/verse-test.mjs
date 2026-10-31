@@ -36,13 +36,17 @@ before(async () => {
 after(async () => { await browser?.close() })
 
 async function setup(t, { rows = [previous], cache = cacheFor(previous), now = SUNDAY,
-  timezoneId = 'Asia/Seoul', offline = false, viewport = { width: 375, height: 667 } } = {}) {
+  timezoneId = 'Asia/Seoul', offline = false, viewport = { width: 375, height: 667 },
+  counts = {}, remoteCounts = null } = {}) {
   const context = await browser.newContext({ timezoneId, viewport })
   t.after(() => context.close())
   const page = await context.newPage()
   const state = { rows, offline, requests: [], gate: null, errors: [] }
   page.on('pageerror', (error) => state.errors.push(error.message))
-  await context.route('**/api/me', (route) => route.fulfill({ json: { loggedIn: false } }))
+  await context.route('**/api/me', (route) => route.fulfill({ json: {
+    loggedIn: !!remoteCounts, haggadah: remoteCounts ? { counts: remoteCounts } : null,
+  } }))
+  await context.route('**/api/haggadah-state', (route) => route.fulfill({ json: { ok: true } }))
   await context.route('https://wjyiovkeduosubtzflqe.supabase.co/**', async (route) => {
     const url = new URL(route.request().url())
     assert.equal(url.pathname, '/rest/v1/haggadot')
@@ -68,13 +72,14 @@ async function setup(t, { rows = [previous], cache = cacheFor(previous), now = S
     )) })
   })
   await page.clock.install({ time: now })
-  await page.addInitScript(({ key, value }) => {
+  await page.addInitScript(({ key, value, counts }) => {
     if (!sessionStorage.getItem('verse-test-initialized')) {
       localStorage.clear()
+      localStorage.setItem('haggadah.v1', JSON.stringify({ counts }))
       if (value) localStorage.setItem(key, JSON.stringify(value))
       sessionStorage.setItem('verse-test-initialized', '1')
     }
-  }, { key: CACHE_KEY, value: cache && { ...cache, fetchedAt: Math.min(cache.fetchedAt, now.getTime()) } })
+  }, { key: CACHE_KEY, value: cache && { ...cache, fetchedAt: Math.min(cache.fetchedAt, now.getTime()) }, counts })
   state.open = () => page.goto(BASE)
   state.shown = async (body) => {
     await page.waitForFunction((text) => document.getElementById('verse-body')?.innerText === text, body)
@@ -436,4 +441,105 @@ test('archive refresh updates selected verse; network errors preserve it and all
   s.offline = false
   await s.page.locator('#btn-next-verse').click()
   await s.shown(current.body_ko)
+})
+
+test('calendar combines local and server achievements, navigates months and restores focus', async (t) => {
+  const s = await setup(t, { rows: [previous, current], cache: cacheFor(current),
+    counts: { '2026-09-01': 99, '2026-09-02': 100, '2026-08-31': 120 },
+    remoteCounts: { '2026-09-01': 110, '2026-09-03': 150 },
+  })
+  await s.open()
+  await s.shown(current.body_ko)
+  await s.page.waitForFunction(() => JSON.parse(localStorage.getItem('haggadah.v1')).counts['2026-09-01'] === 110)
+  await s.page.locator('#btn-calendar').click()
+  assert.ok(await s.page.locator('#verse-calendar').isVisible())
+  assert.equal(await s.page.locator('#calendar-achieved').innerText(), '이번 달 3일')
+  for (const day of ['01', '02', '03']) {
+    assert.match(await s.page.locator(`[data-date="2026-09-${day}"]`).getAttribute('class'), /is-achieved/)
+  }
+  assert.ok(await s.page.locator('[data-date="2026-09-07"]').isDisabled())
+  assert.ok(await s.page.locator('#calendar-next').isDisabled())
+  assert.equal(await s.page.locator('[aria-current="date"]').getAttribute('data-date'), '2026-09-06')
+  await s.page.locator('#calendar-prev').click()
+  assert.equal(await s.page.locator('#calendar-title').innerText(), '2026년 8월')
+  assert.equal(await s.page.locator('#calendar-achieved').innerText(), '이번 달 1일')
+  await s.page.locator('#calendar-today').click()
+  assert.equal(await s.page.locator('#calendar-title').innerText(), '2026년 9월')
+  await s.page.keyboard.press('Escape')
+  assert.ok(await s.page.locator('#verse-calendar').isHidden())
+  assert.equal(await s.page.locator('#btn-calendar').getAttribute('aria-expanded'), 'false')
+  assert.equal(await s.page.evaluate(() => document.activeElement.id), 'btn-calendar')
+})
+
+test('calendar selects exact Sunday week without altering cache or today counts', async (t) => {
+  const s = await setup(t, { rows: [previous, current], cache: cacheFor(current),
+    counts: { '2026-09-06': 24, '2026-09-04': 120 },
+  })
+  await s.open()
+  await s.shown(current.body_ko)
+  await s.page.locator('#btn-calendar').click()
+  await s.page.locator('[data-date="2026-09-05"]').click()
+  await s.shown(previous.body_ko)
+  assert.ok(await s.page.locator('#verse-calendar').isHidden())
+  assert.equal(await s.page.locator('#date').innerText(), '2026.09.05')
+  assert.equal((await s.readCache()).data.id, current.id)
+  await s.page.locator('#btn-increase').click()
+  assert.equal(await s.page.locator('#counter').innerText(), '25')
+  const counts = await s.page.evaluate(() => JSON.parse(localStorage.getItem('haggadah.v1')).counts)
+  assert.equal(counts['2026-09-06'], 25)
+  assert.equal(counts['2026-09-04'], 120)
+  await s.page.locator('#btn-calendar').click()
+  assert.equal(await s.page.locator('.calendar-day.is-selected').getAttribute('data-date'), '2026-09-05')
+  await s.page.locator('[data-date="2026-09-06"]').click()
+  await s.shown(current.body_ko)
+  assert.ok(await s.page.locator('#btn-next-verse').isDisabled())
+})
+
+test('missing calendar week and network failure keep displayed verse and allow retry', async (t) => {
+  const s = await setup(t, { rows: [previous, current], cache: cacheFor(current) })
+  await s.open()
+  await s.shown(current.body_ko)
+  await s.page.locator('#btn-calendar').click()
+  await s.page.locator('#calendar-prev').click()
+  await s.page.locator('[data-date="2026-08-22"]').click()
+  await s.page.waitForFunction(() => document.getElementById('calendar-status').textContent.includes('게시된 말씀이 없어요'))
+  await s.shown(current.body_ko)
+  assert.ok(await s.page.locator('#verse-calendar').isVisible())
+  s.offline = true
+  await s.page.locator('[data-date="2026-08-30"]').click()
+  await s.page.waitForFunction(() => document.getElementById('calendar-status').textContent.includes('연결 상태'))
+  await s.shown(current.body_ko)
+  s.offline = false
+  await s.page.locator('[data-date="2026-08-30"]').click()
+  await s.shown(previous.body_ko)
+  assert.equal(await s.page.locator('#date').innerText(), '2026.08.30')
+})
+
+test('calendar handles year boundary, leap day, responsive layout and keyboard focus', async (t) => {
+  const s = await setup(t, { rows: [current], cache: cacheFor(current) })
+  await s.open()
+  await s.shown(current.body_ko)
+  for (const width of [320, 375, 768, 1440]) {
+    await s.page.setViewportSize({ width, height: 667 })
+    await s.page.locator('#btn-calendar').click()
+    assert.ok(await s.page.evaluate(() => {
+      const dialog = document.getElementById('verse-calendar')
+      const rect = dialog.getBoundingClientRect()
+      return rect.left >= 0 && rect.right <= innerWidth && dialog.scrollWidth <= dialog.clientWidth
+    }), `calendar fits ${width}px`)
+    await s.page.keyboard.press('Tab')
+    assert.ok(await s.page.evaluate(() => document.getElementById('verse-calendar').contains(document.activeElement)))
+    if (width === 375) await s.page.screenshot({ path: '/tmp/haggadah-calendar-mobile.png' })
+    await s.page.keyboard.press('Escape')
+    if (width === 375) await s.page.screenshot({ path: '/tmp/haggadah-header-mobile.png' })
+    if (width === 1440) await s.page.screenshot({ path: '/tmp/haggadah-header-desktop.png' })
+  }
+  await s.page.locator('#btn-calendar').click()
+  for (let i = 0; i < 9; i++) await s.page.locator('#calendar-prev').click()
+  assert.equal(await s.page.locator('#calendar-title').innerText(), '2025년 12월')
+  await s.page.locator('#calendar-next').click()
+  assert.equal(await s.page.locator('#calendar-title').innerText(), '2026년 1월')
+  for (let i = 0; i < 23; i++) await s.page.locator('#calendar-prev').click()
+  assert.equal(await s.page.locator('#calendar-title').innerText(), '2024년 2월')
+  assert.equal(await s.page.locator('.calendar-day').count(), 29)
 })

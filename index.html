@@ -21,7 +21,12 @@
     <div class="date-wrap">
       <nav class="date-navigation" aria-label="주간 말씀 탐색">
         <button id="btn-prev-verse" class="verse-nav" type="button" aria-label="이전 말씀" disabled></button>
-        <h1 id="date" aria-live="polite"></h1>
+        <h1 class="date-title">
+          <button id="btn-calendar" type="button" aria-haspopup="dialog" aria-controls="verse-calendar" aria-expanded="false">
+            <span class="date-eyebrow">말씀 캘린더</span>
+            <span class="date-label"><span id="date" aria-live="polite"></span><span id="date-chevron" aria-hidden="true"></span></span>
+          </button>
+        </h1>
         <button id="btn-next-verse" class="verse-nav" type="button" aria-label="다음 말씀" disabled></button>
         <button id="btn-refresh-verse" class="verse-refresh" type="button"
                 aria-label="말씀 새로고침" title="말씀 새로고침"></button>
@@ -34,6 +39,20 @@
     </div>
   </header>
 
+  <!-- 달성 기록과 주간 말씀 탐색 -->
+  <dialog id="verse-calendar" class="calendar-dialog" aria-labelledby="calendar-title" aria-describedby="calendar-description">
+    <div class="calendar-topline"><span class="calendar-eyebrow">나의 읊조림 기록</span><button id="calendar-close" class="calendar-icon" type="button" aria-label="달력 닫기"></button></div>
+    <div class="calendar-month-nav">
+      <h2 id="calendar-title" aria-live="polite"></h2>
+      <div><button id="calendar-today" type="button">오늘</button><button id="calendar-prev" class="calendar-icon" type="button" aria-label="이전 달"></button><button id="calendar-next" class="calendar-icon" type="button" aria-label="다음 달"></button></div>
+    </div>
+    <p id="calendar-description">날짜를 선택하면 그 주의 말씀을 볼 수 있어요.</p>
+    <div class="calendar-weekdays" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+    <div id="calendar-days" class="calendar-days" role="group" aria-label="날짜 선택"></div>
+    <div class="calendar-summary"><span><i aria-hidden="true"></i>100회 이상 달성</span><strong id="calendar-achieved"></strong></div>
+    <p id="calendar-status" class="calendar-status" role="status" aria-live="polite"></p>
+    <p class="calendar-note">저장된 최근 기록을 표시해요 · 횟수는 오늘에 기록돼요</p>
+  </dialog>
   <!-- 말씀 카드: 별도 프레임/내부 스크롤 없이 문서 흐름을 따라 표시 -->
   <main class="verse-main">
     <article class="verse-card">

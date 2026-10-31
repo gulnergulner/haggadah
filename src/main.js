@@ -1,8 +1,10 @@
 import './styles/base.css'
 import './styles/main.css'
-import { createElement, RefreshCw, ChevronLeft, ChevronRight, Minus, Plus, ChartNoAxesColumnIncreasing } from 'lucide'
+import { createElement, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Minus, Plus, ChartNoAxesColumnIncreasing } from 'lucide'
+import { initCalendar } from './calendar.js'
+import { todayKey } from './storage.js'
 import { createCounter } from './counter.js'
-import { cachedCurrentWeekVerse, fetchLatest, fetchArchivedVerse } from './verse.js'
+import { cachedCurrentWeekVerse, currentWeekKey, fetchLatest, fetchArchivedVerse } from './verse.js'
 import { celebrateMinor, celebrateGrand } from './celebrate.js'
 import {
   GOAL, currentStreak, monthlyAchieved,
@@ -58,6 +60,8 @@ let browsingHistory = false
 let navigationBusy = false
 let oldestVerseId = null
 let verseRequest = 0
+let selectedDate = null
+let calendar
 for (const [button, icon, size] of [
   [els.btnPrevVerse, ChevronLeft, 22],
   [els.btnNextVerse, ChevronRight, 22],
@@ -66,6 +70,7 @@ for (const [button, icon, size] of [
   [els.btnStats, ChartNoAxesColumnIncreasing, 20],
   [els.btnRefreshVerse, RefreshCw, 16],
   [els.btnIncrease, Plus, 24],
+  [$('date-chevron'), ChevronDown, 13],
 ]) {
   button.prepend(createElement(icon, {
     width: size, height: size, 'stroke-width': 1.8,
@@ -74,16 +79,17 @@ for (const [button, icon, size] of [
 }
 
 // ---------- 날짜 ----------
+function displayedDateKey() {
+  return selectedDate || (browsingHistory ? verse?.id : null) || todayKey()
+}
+
 function renderDate() {
-  const today = new Date()
-  const date = browsingHistory && verse
-    ? verse.id.split('-').map(Number)
-    : [today.getFullYear(), today.getMonth() + 1, today.getDate()]
-  els.date.innerText =
-    `${date[0]}.${String(date[1]).padStart(2, '0')}.${String(date[2]).padStart(2, '0')}`
+  els.date.innerText = displayedDateKey().replaceAll('-', '.')
   const busy = navigationBusy || verseLoading || els.btnRefreshVerse.disabled
   els.btnPrevVerse.disabled = busy || !verse || verse.id === oldestVerseId
   els.btnNextVerse.disabled = busy || !browsingHistory
+  $('btn-calendar').disabled = busy
+  $('btn-calendar').setAttribute('aria-label', `${els.date.innerText} · 말씀 달력 열기`)
 }
 
 // ---------- 헤더 배지: 칭호 · 레벨 · 연속 ----------
@@ -175,11 +181,13 @@ async function navigateVerse(direction) {
         : (direction === 'previous' ? 'This is the earliest verse.' : 'This is the latest verse.'))
       if (direction === 'next') {
         browsingHistory = false
+        selectedDate = null
         latestVerseId = verse.id
       }
       return
     }
     verse = selected
+    selectedDate = null
     browsingHistory = selected.id < latestVerseId
     if (!browsingHistory) latestVerseId = selected.id
   } catch {
@@ -195,6 +203,38 @@ async function navigateVerse(direction) {
 }
 els.btnPrevVerse.addEventListener('click', () => navigateVerse('previous'))
 els.btnNextVerse.addEventListener('click', () => navigateVerse('next'))
+
+calendar = initCalendar({
+  getCounts: () => counter.stats().counts,
+  getSelectedDate: displayedDateKey,
+  async onSelect(day) {
+    if (navigationBusy || verseLoading) return false
+    navigationBusy = true
+    ++verseRequest
+    els.btnRefreshVerse.disabled = true
+    renderDate()
+    try {
+      // 날짜 문자열의 요일로 주일을 계산해 기기 시간대의 영향을 피한다.
+      const date = new Date(`${day}T00:00:00Z`)
+      date.setUTCDate(date.getUTCDate() - date.getUTCDay())
+      const week = date.toISOString().slice(0, 10)
+      const selected = await fetchArchivedVerse(week).catch(() => {
+        throw new Error('말씀을 불러오지 못했어요. 연결 상태를 확인하고 다시 선택해 주세요.')
+      })
+      if (!selected) throw new Error('선택한 주에는 게시된 말씀이 없어요. 다른 날짜를 선택해 주세요.')
+      verse = selected
+      selectedDate = day
+      browsingHistory = selected.id < currentWeekKey()
+      if (!browsingHistory) latestVerseId = selected.id
+      return true
+    } finally {
+      navigationBusy = false
+      els.btnRefreshVerse.disabled = false
+      renderVerse()
+      applyFontSize()
+    }
+  },
+})
 
 // 금주 말씀 수신 전과 다음 주 진입 시에만 조회하며, 숨겨진 탭은 건너뛴다.
 setInterval(() => {
@@ -287,6 +327,7 @@ function renderCount(n) {
   els.goalText.innerText = `${n} / ${GOAL}`
   els.goalProgress.classList.toggle('goal-done', n >= GOAL)
   renderBadge()
+  calendar?.refresh()
 }
 
 renderCount(counter.get())
