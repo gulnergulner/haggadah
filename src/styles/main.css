@@ -59,6 +59,11 @@ body {
   flex-shrink: 0;
 }
 
+.date-navigation::before {
+  content: '';
+  flex: 0 0 32px;
+}
+
 .verse-nav {
   display: inline-flex;
   align-items: center;
@@ -91,8 +96,8 @@ body {
 #btn-calendar:focus-visible { outline: 2px solid var(--badge-text); }
 #btn-calendar:disabled { cursor: wait; }
 .date-eyebrow { font-size: 10px; font-weight: 500; color: var(--text-soft); letter-spacing: 0.04em; }
-.date-label { display: flex; align-items: center; gap: 6px; }
-#date-chevron { display: flex; color: #9298a5; transition: transform 0.2s; }
+.date-label { position: relative; display: flex; align-items: center; }
+#date-chevron { position: absolute; left: calc(100% + 6px); display: flex; color: #9298a5; transition: transform 0.2s; }
 #btn-calendar[aria-expanded="true"] #date-chevron { transform: rotate(180deg); }
 
 #date {
@@ -191,12 +196,13 @@ body {
 @media (max-width: 760px) {
   #title-badge { display: none; }
   .top { gap: 4px; padding-inline: 10px; min-height: calc(58px + env(safe-area-inset-top)); }
-  .top .sync-controls { flex: 0 0 auto; }
+  .top .sync-controls { flex: 0 0 auto; margin-right: 32px; }
   .date-navigation { position: static; transform: none; flex: 1 1 auto; min-width: 0; gap: 1px; padding: 3px; }
+  .date-navigation::before { flex-basis: 28px; }
   .date-title { flex: 1 1 auto; min-width: 0; }
   .date-eyebrow { display: none; }
   #btn-calendar { width: 100%; min-width: 0; min-height: 38px; padding: 4px 2px; }
-  .date-label { gap: 3px; }
+  #date-chevron { left: calc(100% + 3px); }
   #date { font-size: 14px; }
   .verse-nav, .verse-refresh { width: 28px; height: 38px; flex: 0 0 28px; }
   .font-controls { flex: 0 0 auto; gap: 2px; margin-left: 0; }
@@ -207,7 +213,9 @@ body {
   .top { gap: 2px; padding-inline: 8px; }
   .verse-nav, .verse-refresh { width: 24px; flex-basis: 24px; }
   .top .sync-btn, .font-size-btn { width: 26px; }
+  .top .sync-controls { margin-right: 28px; }
   .date-navigation { gap: 0; }
+  .date-navigation::before { flex-basis: 24px; }
   #date { font-size: 13px; }
 }
 
