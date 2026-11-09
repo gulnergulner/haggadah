@@ -19,14 +19,17 @@ async function setup(t, { supported = true, english = true } = {}) {
     body_ko: '이전 본문', body_en: 'Previous English verse',
   }] }))
   await page.addInitScript(({ supported, english }) => {
-    localStorage.clear()
-    localStorage.setItem('haggadah.v1', JSON.stringify({ counts: {}, lang: 'en' }))
-    localStorage.setItem('haggadah.verseCache', JSON.stringify({
-      id: '2026-09-06', data: {
-        id: '2026-09-06', reference: '말씀', referenceEn: 'Deuteronomy 16:3',
-        bodyKo: '한국어 말씀', bodyEn: english ? 'Remember this day.' : '',
-      }, fetchedAt: Date.now(),
-    }))
+    if (!sessionStorage.getItem('speech-test-initialized')) {
+      localStorage.clear()
+      localStorage.setItem('haggadah.v1', JSON.stringify({ counts: {}, lang: 'en' }))
+      localStorage.setItem('haggadah.verseCache', JSON.stringify({
+        id: '2026-09-06', data: {
+          id: '2026-09-06', reference: '말씀', referenceEn: 'Deuteronomy 16:3',
+          bodyKo: '한국어 말씀', bodyEn: english ? 'Remember this day.' : '',
+        }, fetchedAt: Date.now(),
+      }))
+      sessionStorage.setItem('speech-test-initialized', '1')
+    }
     window.speechTest = { utterances: [], canceled: 0 }
     if (supported) {
       window.SpeechSynthesisUtterance = class { constructor(text) { this.text = text } }
@@ -103,8 +106,31 @@ test('playback errors allow retry and leaving the page stops speech', async (t) 
 test('unavailable speech or missing English content leaves an explanatory disabled button', async (t) => {
   const unsupported = await setup(t, { supported: false })
   assert.ok(await unsupported.locator('#btn-verse-audio').isDisabled())
+  assert.ok(await unsupported.locator('#verse-audio-rate').isDisabled())
   assert.match(await unsupported.locator('#btn-verse-audio').getAttribute('title'), /not supported/)
   const missing = await setup(t, { english: false })
   assert.ok(await missing.locator('#btn-verse-audio').isDisabled())
+  assert.ok(await missing.locator('#verse-audio-rate').isDisabled())
   assert.match(await missing.locator('#btn-verse-audio').getAttribute('title'), /No English verse/)
+})
+
+test('speed changes restart playback and persist across reloads', async (t) => {
+  const page = await setup(t)
+  const button = page.locator('#btn-verse-audio')
+  const speed = page.locator('#verse-audio-rate')
+  assert.equal(await speed.inputValue(), '1')
+  await speed.selectOption('0.7')
+  await button.click()
+  assert.equal(await page.evaluate(() => window.speechTest.utterances[0].rate), 0.7)
+  await speed.selectOption('0.85')
+  assert.equal(await page.evaluate(() => window.speechTest.canceled), 1)
+  assert.equal(await page.evaluate(() => window.speechTest.utterances[1].rate), 0.85)
+  assert.equal(await button.innerText(), 'Stop')
+  await page.evaluate(() => window.speechTest.utterances[0].onend())
+  assert.equal(await button.innerText(), 'Stop')
+  await button.click()
+  await page.reload()
+  assert.equal(await speed.inputValue(), '0.85')
+  await button.click()
+  assert.equal(await page.evaluate(() => window.speechTest.utterances[0].rate), 0.85)
 })

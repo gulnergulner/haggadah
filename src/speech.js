@@ -1,11 +1,13 @@
 import { createElement, Volume2, Square } from 'lucide'
 
 // 음성 합성은 기기에 맡기며, 화면에 표시된 영문 말씀이 바뀌면 재생을 멈춘다.
-export function initVerseSpeech({ container, button, onError }) {
+export function initVerseSpeech({ container, button, speedSelect, savedSpeed, onSpeedChange, onError }) {
   const supported = !!window.speechSynthesis && typeof window.SpeechSynthesisUtterance === 'function'
   let content = ''
   let active = false
   let request = 0
+  speedSelect.value = [...speedSelect.options].some((option) => Number(option.value) === savedSpeed)
+    ? String(savedSpeed) : '1'
 
   function render() {
     const label = !supported ? 'Audio unavailable' : !content ? 'English unavailable'
@@ -20,6 +22,7 @@ export function initVerseSpeech({ container, button, onError }) {
     button.setAttribute('aria-label', !supported ? 'Speech is not supported on this device'
       : !content ? 'No English verse is available' : active ? 'Stop reading the verse' : 'Listen to the verse')
     button.disabled = !supported || !content
+    speedSelect.disabled = !supported || !content
     button.title = !supported ? 'Speech is not supported on this device.'
       : !content ? 'No English verse is available.' : ''
   }
@@ -32,13 +35,13 @@ export function initVerseSpeech({ container, button, onError }) {
     render()
   }
 
-  button.addEventListener('click', () => {
-    if (active) return stop()
+  function play() {
     if (!supported || !content) return
     const id = ++request
     try {
       const utterance = new SpeechSynthesisUtterance(content)
       utterance.lang = 'en-US'
+      utterance.rate = Number(speedSelect.value)
       const voices = window.speechSynthesis.getVoices().filter((voice) => /^en(?:-|$)/i.test(voice.lang))
       const english = voices.find((voice) => voice.localService && /^en-us$/i.test(voice.lang))
         || voices.find((voice) => voice.localService)
@@ -62,6 +65,15 @@ export function initVerseSpeech({ container, button, onError }) {
       active = false
       render()
       onError()
+    }
+  }
+
+  button.addEventListener('click', () => { if (active) stop(); else play() })
+  speedSelect.addEventListener('change', () => {
+    onSpeedChange(Number(speedSelect.value))
+    if (active) {
+      stop()
+      play()
     }
   })
 

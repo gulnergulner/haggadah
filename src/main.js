@@ -56,6 +56,9 @@ const counter = createCounter()
 const verseSpeech = initVerseSpeech({
   container: $('verse-audio'),
   button: $('btn-verse-audio'),
+  speedSelect: $('verse-audio-rate'),
+  savedSpeed: counter.getPref('speechRate'),
+  onSpeedChange: (speed) => counter.setPref('speechRate', speed),
   onError: () => showToast('Unable to play audio. Please check your device’s speech settings.'),
 })
 initLeaderboard()

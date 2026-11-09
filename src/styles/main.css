@@ -176,7 +176,7 @@ body {
   margin-bottom: 14px;
 }
 
-.verse-audio { margin: -3px 0 14px; }
+.verse-audio { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin: -3px 0 14px; }
 .verse-audio-btn {
   display: inline-flex;
   align-items: center;
@@ -195,6 +195,23 @@ body {
 .verse-audio-btn:hover:not(:disabled) { background: #e4e7ff; }
 .verse-audio-btn:focus-visible { outline: 2px solid var(--badge-text); outline-offset: 2px; }
 .verse-audio-btn:disabled { opacity: 0.5; cursor: default; }
+.verse-audio-speed {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 10px 0 13px;
+  border: 1px solid var(--card-line);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text-soft);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+}
+.verse-audio-speed select { border: 0; background: transparent; color: var(--text); font: inherit; min-height: 36px; cursor: pointer; }
+.verse-audio-speed select:focus-visible { outline: 2px solid var(--badge-text); outline-offset: 2px; }
+.verse-audio-speed:has(select:disabled) { opacity: 0.5; }
 
 .verse-refresh {
   flex: 0 0 32px;
