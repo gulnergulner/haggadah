@@ -292,14 +292,19 @@ els.btnLang.addEventListener('click', () => {
 // 사용자는 -/+ 버튼으로 자동 크기에서 줄이는 방향의 보정만 저장한다.
 const MIN_FONT = 12
 const MAX_FONT = 44
+const FONT_FIT_KEY = 'haggadah.verseFontFit.v1'
 let fontDelta = parseInt(localStorage.getItem('verseFontDelta'), 10) || 0
+let lastFontFit = null
+try { lastFontFit = JSON.parse(localStorage.getItem(FONT_FIT_KEY)) } catch { /* 저장값이 없으면 자동 맞춤 */ }
 
 const verseMain = document.querySelector('.verse-main')
 const verseCard = document.querySelector('.verse-card')
 
 // 이진 탐색으로 컨테이너를 넘치지 않는 최대 폰트 크기를 찾는다
 function fitFontSize() {
-  const avail = verseMain.clientHeight
+  const mainStyle = getComputedStyle(verseMain)
+  const avail = verseMain.clientHeight - parseFloat(mainStyle.paddingTop) - parseFloat(mainStyle.paddingBottom)
+  if (avail <= 0) return null
   let lo = MIN_FONT
   let hi = MAX_FONT
   let best = MIN_FONT
@@ -316,21 +321,35 @@ function fitFontSize() {
   return best
 }
 
-function applyFontSize() {
+function applyFontSize({ preferredSize } = {}) {
+  if (verseLoading || !verse) {
+    verseCard.style.fontSize = '20px'
+    return
+  }
   const fit = fitFontSize()
-  const size = Math.max(MIN_FONT, Math.min(fit, fit + fontDelta))
+  if (fit === null) return
+  const key = JSON.stringify([verse.id, counter.getPref('lang'), els.ref.textContent, els.body.textContent, fontDelta])
+  let size = Math.max(MIN_FONT, Math.min(fit, preferredSize ?? fit + fontDelta))
+  if (preferredSize === undefined && lastFontFit?.key === key && Number.isFinite(lastFontFit.size)
+    && lastFontFit.size >= MIN_FONT && lastFontFit.size <= MAX_FONT) {
+    size = Math.min(fit, lastFontFit.size)
+  }
   verseCard.style.fontSize = `${size}px`
+  lastFontFit = { key, size }
+  try { localStorage.setItem(FONT_FIT_KEY, JSON.stringify(lastFontFit)) } catch { /* 저장할 수 없어도 화면은 유지 */ }
 }
 
 els.fontIncrease.addEventListener('click', () => {
+  const currentSize = parseFloat(getComputedStyle(verseCard).fontSize)
   fontDelta = Math.min(0, fontDelta + 4)
   localStorage.setItem('verseFontDelta', fontDelta)
-  applyFontSize()
+  applyFontSize({ preferredSize: currentSize + 4 })
 })
 els.fontDecrease.addEventListener('click', () => {
+  const currentSize = parseFloat(getComputedStyle(verseCard).fontSize)
   fontDelta = Math.max(-(MAX_FONT - MIN_FONT), fontDelta - 4)
   localStorage.setItem('verseFontDelta', fontDelta)
-  applyFontSize()
+  applyFontSize({ preferredSize: currentSize - 4 })
 })
 
 applyFontSize()

@@ -176,7 +176,7 @@ body {
   margin-bottom: 14px;
 }
 
-.verse-audio { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin: -3px 0 14px; }
+.verse-audio { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin: 16px 0 0; }
 .verse-audio-btn {
   display: inline-flex;
   align-items: center;

@@ -8,7 +8,7 @@ let browser
 before(async () => { browser = await chromium.launch({ channel: 'msedge', headless: true }) })
 after(async () => { await browser?.close() })
 
-async function setup(t, { supported = true, english = true } = {}) {
+async function setup(t, { supported = true, english = true, longEnglish = false } = {}) {
   const context = await browser.newContext({ viewport: { width: 320, height: 667 }, timezoneId: 'Asia/Seoul' })
   t.after(() => context.close())
   const page = await context.newPage()
@@ -18,14 +18,16 @@ async function setup(t, { supported = true, english = true } = {}) {
     id: '2026-08-30', reference: '이전 말씀', reference_en: 'Previous reference',
     body_ko: '이전 본문', body_en: 'Previous English verse',
   }] }))
-  await page.addInitScript(({ supported, english }) => {
+  await page.addInitScript(({ supported, english, longEnglish }) => {
     if (!sessionStorage.getItem('speech-test-initialized')) {
       localStorage.clear()
       localStorage.setItem('haggadah.v1', JSON.stringify({ counts: {}, lang: 'en' }))
       localStorage.setItem('haggadah.verseCache', JSON.stringify({
         id: '2026-09-06', data: {
           id: '2026-09-06', reference: '말씀', referenceEn: 'Deuteronomy 16:3',
-          bodyKo: '한국어 말씀', bodyEn: english ? 'Remember this day.' : '',
+          bodyKo: '한국어 말씀', bodyEn: !english ? '' : longEnglish
+            ? 'Do not eat it with bread made with yeast, but for seven days eat unleavened bread, the bread of affliction, because you left Egypt in haste, so that all the days of your life you may remember the time of your departure from Egypt.'
+            : 'Remember this day.',
         }, fetchedAt: Date.now(),
       }))
       sessionStorage.setItem('speech-test-initialized', '1')
@@ -48,7 +50,7 @@ async function setup(t, { supported = true, english = true } = {}) {
       delete window.speechSynthesis
       delete window.SpeechSynthesisUtterance
     }
-  }, { supported, english })
+  }, { supported, english, longEnglish })
   await page.goto(BASE)
   return page
 }
@@ -167,4 +169,46 @@ test('changing speed while paused restarts playback without leaving the engine p
   assert.equal(await page.evaluate(() => window.speechTest.resumed), 1)
   assert.equal(await page.evaluate(() => window.speechTest.utterances[1].rate), 0.7)
   assert.equal(await button.innerText(), 'Pause')
+})
+
+test('audio controls appear below the verse with play and pause at the right', async (t) => {
+  const page = await setup(t, { longEnglish: true })
+  const button = page.locator('#btn-verse-audio')
+  for (const state of ['idle', 'playing', 'paused']) {
+    if (state !== 'idle') await button.click()
+    const layout = await page.evaluate(() => {
+      const box = (selector) => {
+        const r = document.querySelector(selector).getBoundingClientRect()
+        return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }
+      }
+      return { body: box('#verse-body'), audio: box('#verse-audio'),
+        speed: box('.verse-audio-speed'), button: box('#btn-verse-audio'),
+        stop: box('#btn-verse-audio-stop'), width: document.documentElement.scrollWidth }
+    })
+    assert.ok(layout.body.bottom <= layout.audio.top, `${state}: controls are below text`)
+    assert.ok(layout.speed.right <= layout.button.left, `${state}: play button is to the right`)
+    assert.ok(layout.button.right <= 320 && layout.width <= 320, `${state}: controls fit screen`)
+    if (state !== 'idle') assert.ok(layout.stop.right <= layout.button.left, `${state}: stop is before play`)
+  }
+})
+
+test('English font remains stable on return and manual font controls adjust from its current size', async (t) => {
+  const page = await setup(t, { longEnglish: true })
+  await page.evaluate(() => document.fonts.ready)
+  const fontSize = () => page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('#verse-body')).fontSize))
+  await page.locator('#font-decrease').click()
+  const saved = await fontSize()
+  await page.setViewportSize({ width: 768, height: 900 })
+  await page.evaluate(() => window.dispatchEvent(new Event('resize')))
+  assert.equal(await fontSize(), saved, 'automatic fitting does not enlarge the text')
+  await page.reload()
+  await page.evaluate(() => document.fonts.ready)
+  assert.equal(await fontSize(), saved, 'reloading keeps the last fitted size')
+  await page.locator('#font-decrease').click()
+  const decreased = Math.max(12, saved - 4)
+  assert.equal(await fontSize(), decreased, 'decrease never enlarges text')
+  await page.locator('#font-increase').click()
+  assert.equal(await fontSize(), decreased + 4, 'increase adjusts from the current size')
+  await page.evaluate(() => window.dispatchEvent(new Event('resize')))
+  assert.equal(await fontSize(), decreased + 4, 'automatic fitting keeps the manually increased size')
 })

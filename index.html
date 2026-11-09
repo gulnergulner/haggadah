@@ -59,9 +59,8 @@
       <div class="verse-heading">
         <span id="verse-ref" class="verse-ref"></span>
       </div>
+      <p id="verse-body" class="verse-body"></p>
       <div id="verse-audio" class="verse-audio" hidden>
-        <button id="btn-verse-audio" class="verse-audio-btn" type="button"></button>
-        <button id="btn-verse-audio-stop" class="verse-audio-stop" type="button" aria-label="Stop reading the verse" title="Stop" hidden></button>
         <label class="verse-audio-speed" for="verse-audio-rate">
           <span>Speed</span>
           <select id="verse-audio-rate" title="Changing speed restarts the reading">
@@ -72,8 +71,9 @@
             <option value="1.3">1.3×</option>
           </select>
         </label>
+        <button id="btn-verse-audio-stop" class="verse-audio-stop" type="button" aria-label="Stop reading the verse" title="Stop" hidden></button>
+        <button id="btn-verse-audio" class="verse-audio-btn" type="button"></button>
       </div>
-      <p id="verse-body" class="verse-body"></p>
     </article>
   </main>
 
