@@ -1,37 +1,46 @@
-import { createElement, Volume2, Square } from 'lucide'
+import { createElement, Volume2, Square, Pause, Play } from 'lucide'
 
 // 음성 합성은 기기에 맡기며, 화면에 표시된 영문 말씀이 바뀌면 재생을 멈춘다.
-export function initVerseSpeech({ container, button, speedSelect, savedSpeed, onSpeedChange, onError }) {
-  const supported = !!window.speechSynthesis && typeof window.SpeechSynthesisUtterance === 'function'
+export function initVerseSpeech({ container, button, stopButton, speedSelect, savedSpeed, onSpeedChange, onError }) {
+  const synth = window.speechSynthesis
+  const supported = !!synth && typeof window.SpeechSynthesisUtterance === 'function'
+    && typeof synth.pause === 'function' && typeof synth.resume === 'function'
   let content = ''
-  let active = false
+  let state = 'idle'
   let request = 0
+  stopButton.append(createElement(Square, {
+    width: 15, height: 15, 'stroke-width': 2, 'aria-hidden': 'true', focusable: 'false',
+  }))
   speedSelect.value = [...speedSelect.options].some((option) => Number(option.value) === savedSpeed)
     ? String(savedSpeed) : '1'
 
   function render() {
     const label = !supported ? 'Audio unavailable' : !content ? 'English unavailable'
-      : active ? 'Stop' : 'Listen'
+      : state === 'playing' ? 'Pause' : state === 'paused' ? 'Resume' : 'Listen'
     button.replaceChildren(
-      createElement(active ? Square : Volume2, {
+      createElement(state === 'playing' ? Pause : state === 'paused' ? Play : Volume2, {
         width: 16, height: 16, 'stroke-width': 2, 'aria-hidden': 'true', focusable: 'false',
       }),
       document.createTextNode(label),
     )
-    button.setAttribute('aria-pressed', String(active))
     button.setAttribute('aria-label', !supported ? 'Speech is not supported on this device'
-      : !content ? 'No English verse is available' : active ? 'Stop reading the verse' : 'Listen to the verse')
+      : !content ? 'No English verse is available' : state === 'playing' ? 'Pause reading the verse'
+        : state === 'paused' ? 'Resume reading the verse' : 'Listen to the verse')
     button.disabled = !supported || !content
     speedSelect.disabled = !supported || !content
+    stopButton.hidden = state === 'idle'
     button.title = !supported ? 'Speech is not supported on this device.'
       : !content ? 'No English verse is available.' : ''
   }
 
   function stop() {
-    if (!active) return
-    active = false
+    if (state === 'idle') return
+    const wasPaused = state === 'paused'
+    state = 'idle'
     request++
-    window.speechSynthesis.cancel()
+    synth.cancel()
+    // 취소해도 합성 엔진의 일시정지 상태는 유지될 수 있다.
+    if (wasPaused) synth.resume()
     render()
   }
 
@@ -42,36 +51,55 @@ export function initVerseSpeech({ container, button, speedSelect, savedSpeed, on
       const utterance = new SpeechSynthesisUtterance(content)
       utterance.lang = 'en-US'
       utterance.rate = Number(speedSelect.value)
-      const voices = window.speechSynthesis.getVoices().filter((voice) => /^en(?:-|$)/i.test(voice.lang))
+      const voices = synth.getVoices().filter((voice) => /^en(?:-|$)/i.test(voice.lang))
       const english = voices.find((voice) => voice.localService && /^en-us$/i.test(voice.lang))
         || voices.find((voice) => voice.localService)
         || voices.find((voice) => /^en-us$/i.test(voice.lang)) || voices[0]
       if (english) utterance.voice = english
       utterance.onend = () => {
         if (id !== request) return
-        active = false
+        state = 'idle'
         render()
       }
       utterance.onerror = (event) => {
         if (id !== request) return
-        active = false
+        state = 'idle'
         render()
         if (event.error !== 'canceled' && event.error !== 'interrupted') onError()
       }
-      active = true
+      state = 'playing'
       render()
-      window.speechSynthesis.speak(utterance)
+      synth.speak(utterance)
     } catch {
-      active = false
+      state = 'idle'
       render()
       onError()
     }
   }
 
-  button.addEventListener('click', () => { if (active) stop(); else play() })
+  button.addEventListener('click', () => {
+    if (state === 'idle') return play()
+    try {
+      if (state === 'playing') {
+        synth.pause()
+        state = 'paused'
+      } else {
+        synth.resume()
+        state = 'playing'
+      }
+      render()
+    } catch {
+      stop()
+      onError()
+    }
+  })
+  stopButton.addEventListener('click', () => {
+    stop()
+    button.focus()
+  })
   speedSelect.addEventListener('change', () => {
     onSpeedChange(Number(speedSelect.value))
-    if (active) {
+    if (state !== 'idle') {
       stop()
       play()
     }

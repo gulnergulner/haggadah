@@ -56,6 +56,7 @@ const counter = createCounter()
 const verseSpeech = initVerseSpeech({
   container: $('verse-audio'),
   button: $('btn-verse-audio'),
+  stopButton: $('btn-verse-audio-stop'),
   speedSelect: $('verse-audio-rate'),
   savedSpeed: counter.getPref('speechRate'),
   onSpeedChange: (speed) => counter.setPref('speechRate', speed),

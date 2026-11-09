@@ -1,3 +1,5 @@
+const HAGGADAH_URL = 'https://haggadah.godagent.net'
+
 function formatReference(reference) {
   // 장:절 표기를 풀어 쓰되, 절 범위·여러 구절·이미 풀어 쓴 출처는 보존한다.
   return reference.trim().replace(/(\d+)\s*:\s*(\d+(?:\s*[-–~]\s*\d+)?(?:\s*,\s*\d+(?:\s*[-–~]\s*\d+)?)?)/g, '$1장 $2절')
@@ -11,15 +13,19 @@ export function initShare({ button, counter, getVerse, showToast }) {
     if (sharing) return
     // 버튼을 누른 시점의 카운터와 보고 있는 말씀 전체를 공유한다.
     const verse = getVerse()
-    const body = verse?.bodyKo?.trim()
-    const reference = verse?.reference?.trim()
-    if (!body || !reference) {
+    const english = !ko() && !!verse?.bodyEn
+    const body = (english ? verse?.bodyEn : verse?.bodyKo)?.trim()
+    const reference = (english ? verse?.referenceEn : verse?.reference)?.trim()
+    if (!body || (!english && !reference)) {
       showToast(ko()
         ? '말씀을 불러온 뒤 공유해 주세요.'
         : 'Please wait for the verse before sharing.')
       return
     }
-    const text = `${counter.get()}번 읊조렸습니다.\n\n${body} [${formatReference(reference)}]`.trimEnd()
+    const count = counter.get()
+    const intro = ko() ? `${count}번 읊조렸습니다.` : `I recited ${count} ${count === 1 ? 'time' : 'times'}.`
+    const citation = reference ? ` [${english ? reference : formatReference(reference)}]` : ''
+    const text = `${intro}\n\n${body}${citation}\n\n${HAGGADAH_URL}`
     sharing = true
     button.disabled = true
     button.setAttribute('aria-busy', 'true')

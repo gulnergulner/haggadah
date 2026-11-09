@@ -3,6 +3,7 @@ import { before, after, test } from 'node:test'
 import { chromium } from 'playwright-core'
 
 const BASE = process.env.TEST_BASE_URL || 'http://localhost:5173'
+const LINK = 'https://haggadah.godagent.net'
 let browser
 before(async () => { browser = await chromium.launch({ channel: 'msedge', headless: true }) })
 after(async () => { await browser?.close() })
@@ -19,7 +20,7 @@ async function setup(t, mode = 'native') {
     d.setUTCDate(d.getUTCDate() - d.getUTCDay())
     localStorage.setItem('haggadah.verseCache', JSON.stringify({ data: {
       id: d.toISOString().slice(0, 10), reference: '시편 1:2-3', bodyKo: '말씀을 읊조려요\n주야로 묵상해요',
-      bodyEn: 'Read the verse',
+      bodyEn: 'Read the verse', referenceEn: 'Psalm 1:2-3',
     } }))
     localStorage.setItem('haggadah.kakaoNudge', '1')
     const today = new Date()
@@ -51,10 +52,10 @@ async function setup(t, mode = 'native') {
   return { page, errors }
 }
 
-test('share sends only current count text, including increments, reset, and English view', async (t) => {
+test('share uses the displayed language and current count', async (t) => {
   const { page, errors } = await setup(t)
   await page.locator('#btn-share').click()
-  assert.deepEqual(await page.evaluate(() => window.shared), [{ text: '37번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]' }])
+  assert.deepEqual(await page.evaluate(() => window.shared), [{ text: `37번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]\n\n${LINK}` }])
   await page.locator('#btn-increase').click()
   await page.locator('#btn-lang').click()
   assert.equal(await page.locator('#btn-share').innerText(), 'Share')
@@ -62,7 +63,7 @@ test('share sends only current count text, including increments, reset, and Engl
   await page.locator('#btn-reset').click()
   await page.locator('#btn-share').click()
   assert.deepEqual(await page.evaluate(() => window.shared), [
-    { text: '37번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]' }, { text: '38번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]' }, { text: '0번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]' },
+    { text: `37번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]\n\n${LINK}` }, { text: `I recited 38 times.\n\nRead the verse [Psalm 1:2-3]\n\n${LINK}` }, { text: `I recited 0 times.\n\nRead the verse [Psalm 1:2-3]\n\n${LINK}` },
   ])
   assert.deepEqual(await page.evaluate(() => window.copied), [])
   assert.deepEqual(errors, [])
@@ -72,7 +73,7 @@ for (const mode of ['clipboard', 'unsupported', 'share-error']) {
   test(`${mode} copies only the message and explains how to share on KakaoTalk`, async (t) => {
     const { page, errors } = await setup(t, mode)
     await page.locator('#btn-share').click()
-    assert.deepEqual(await page.evaluate(() => window.copied), ['37번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]'])
+    assert.deepEqual(await page.evaluate(() => window.copied), [`37번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]\n\n${LINK}`])
     assert.match(await page.locator('#toast').innerText(), /카카오톡에 붙여 넣어/)
     assert.ok(await page.locator('#btn-share').isEnabled())
     assert.deepEqual(errors, [])
@@ -94,7 +95,7 @@ test('pending share prevents duplicate clicks and preserves count at click time'
   assert.ok(await page.locator('#btn-share').isDisabled())
   await page.evaluate(() => document.getElementById('btn-share').dispatchEvent(new MouseEvent('click')))
   await page.locator('#btn-increase').click()
-  assert.deepEqual(await page.evaluate(() => window.shared), [{ text: '37번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]' }])
+  assert.deepEqual(await page.evaluate(() => window.shared), [{ text: `37번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]\n\n${LINK}` }])
   await page.evaluate(() => window.finishShare())
   await page.waitForFunction(() => !document.getElementById('btn-share').disabled)
   assert.equal(await page.locator('#counter').innerText(), '38')
@@ -139,11 +140,46 @@ test('sharing an older verse uses its full text and reference instead of latest 
   await page.waitForFunction(() => document.getElementById('verse-body').innerText.startsWith('네 하나님'))
   await page.locator('#btn-share').click()
   assert.deepEqual(await page.evaluate(() => window.shared), [{
-    text: '37번 읊조렸습니다.\n\n네 하나님 여호와 앞에서 즐거워하되\n레위인을 저버리지 말지니라 [신명기 12장 18-19절]',
+    text: `37번 읊조렸습니다.\n\n네 하나님 여호와 앞에서 즐거워하되\n레위인을 저버리지 말지니라 [신명기 12장 18-19절]\n\n${LINK}`,
   }])
+  await page.locator('#btn-lang').click()
+  await page.locator('#btn-share').click()
+  assert.deepEqual((await page.evaluate(() => window.shared)).at(-1), {
+    text: `I recited 37 times.\n\nBe joyful before the Lord. [Deuteronomy 12:18-19]\n\n${LINK}`,
+  })
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('haggadah.verseCache')).data.bodyKo),
     '말씀을 읊조려요\n주야로 묵상해요')
   assert.deepEqual(errors, [])
+})
+
+test('English clipboard sharing uses the displayed verse even without an English reference', async (t) => {
+  const { page } = await setup(t, 'clipboard')
+  await page.evaluate(() => {
+    const cache = JSON.parse(localStorage.getItem('haggadah.verseCache'))
+    delete cache.data.referenceEn
+    localStorage.setItem('haggadah.verseCache', JSON.stringify(cache))
+    window.dispatchEvent(new Event('online'))
+  })
+  await page.locator('#btn-lang').click()
+  await page.locator('#btn-share').click()
+  assert.deepEqual(await page.evaluate(() => window.copied), [
+    `I recited 37 times.\n\nRead the verse\n\n${LINK}`,
+  ])
+})
+
+test('English screen shares the Korean fallback when no English verse exists', async (t) => {
+  const { page } = await setup(t)
+  await page.evaluate(() => {
+    const cache = JSON.parse(localStorage.getItem('haggadah.verseCache'))
+    delete cache.data.bodyEn
+    localStorage.setItem('haggadah.verseCache', JSON.stringify(cache))
+    window.dispatchEvent(new Event('online'))
+  })
+  await page.locator('#btn-lang').click()
+  await page.locator('#btn-share').click()
+  assert.deepEqual(await page.evaluate(() => window.shared), [{
+    text: `I recited 37 times.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]\n\n${LINK}`,
+  }])
 })
 
 test('missing verse does not open the share sheet or copy an incomplete message', async (t) => {
@@ -165,7 +201,7 @@ test('missing verse does not open the share sheet or copy an incomplete message'
 })
 
 for (const mode of ['native', 'clipboard']) {
-  test(`${mode} ends at the closing bracket even when stored verse has trailing whitespace`, async (t) => {
+  test(`${mode} ends with the link even when stored verse has trailing whitespace`, async (t) => {
     const { page, errors } = await setup(t, mode)
     await page.evaluate(() => {
       const cache = JSON.parse(localStorage.getItem('haggadah.verseCache'))
@@ -177,8 +213,8 @@ for (const mode of ['native', 'clipboard']) {
     await page.waitForFunction(() => !document.getElementById('btn-prev-verse').disabled)
     await page.locator('#btn-share').click()
     const text = await page.evaluate((mode) => mode === 'native' ? window.shared[0].text : window.copied[0], mode)
-    assert.equal(text, '37번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]')
-    assert.equal(text.at(-1), ']')
+    assert.equal(text, `37번 읊조렸습니다.\n\n말씀을 읊조려요\n주야로 묵상해요 [시편 1장 2-3절]\n\n${LINK}`)
+    assert.equal(text.split('\n').at(-1), LINK)
     assert.equal(text, text.trimEnd())
     assert.deepEqual(errors, [])
   })

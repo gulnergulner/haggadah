@@ -30,7 +30,7 @@ async function setup(t, { supported = true, english = true } = {}) {
       }))
       sessionStorage.setItem('speech-test-initialized', '1')
     }
-    window.speechTest = { utterances: [], canceled: 0 }
+    window.speechTest = { utterances: [], canceled: 0, paused: 0, resumed: 0 }
     if (supported) {
       window.SpeechSynthesisUtterance = class { constructor(text) { this.text = text } }
       Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: {
@@ -41,6 +41,8 @@ async function setup(t, { supported = true, english = true } = {}) {
         ],
         speak: (utterance) => window.speechTest.utterances.push(utterance),
         cancel: () => { window.speechTest.canceled++ },
+        pause: () => { window.speechTest.paused++ },
+        resume: () => { window.speechTest.resumed++ },
       } })
     } else {
       delete window.speechSynthesis
@@ -51,23 +53,30 @@ async function setup(t, { supported = true, english = true } = {}) {
   return page
 }
 
-test('plays the English reference and verse with an English voice, then stops and restarts', async (t) => {
+test('plays, pauses, resumes and stops the English verse without starting a new utterance', async (t) => {
   const page = await setup(t)
   const button = page.locator('#btn-verse-audio')
   assert.ok(await button.isVisible())
   await button.click()
-  assert.equal(await button.innerText(), 'Stop')
-  assert.equal(await button.getAttribute('aria-pressed'), 'true')
+  assert.equal(await button.innerText(), 'Pause')
+  assert.equal(await button.getAttribute('aria-label'), 'Pause reading the verse')
   const spoken = await page.evaluate(() => {
     const { text, lang, voice } = window.speechTest.utterances[0]
     return { text, lang, voice: voice?.lang }
   })
   assert.deepEqual(spoken, { text: 'Deuteronomy 16:3. Remember this day.', lang: 'en-US', voice: 'en-GB' })
   await button.click()
+  assert.equal(await button.innerText(), 'Resume')
+  assert.equal(await page.evaluate(() => window.speechTest.paused), 1)
+  await button.click()
+  assert.equal(await button.innerText(), 'Pause')
+  assert.equal(await page.evaluate(() => window.speechTest.resumed), 1)
+  assert.equal(await page.evaluate(() => window.speechTest.utterances.length), 1)
+  await page.locator('#btn-verse-audio-stop').click()
   assert.equal(await page.evaluate(() => window.speechTest.canceled), 1)
   await button.click()
   await page.evaluate(() => window.speechTest.utterances[0].onend())
-  assert.equal(await button.innerText(), 'Stop', 'an old end event does not stop new playback')
+  assert.equal(await button.innerText(), 'Pause', 'an old end event does not stop new playback')
   await page.evaluate(() => window.speechTest.utterances[1].onend())
   assert.equal(await button.innerText(), 'Listen')
 })
@@ -125,12 +134,37 @@ test('speed changes restart playback and persist across reloads', async (t) => {
   await speed.selectOption('0.85')
   assert.equal(await page.evaluate(() => window.speechTest.canceled), 1)
   assert.equal(await page.evaluate(() => window.speechTest.utterances[1].rate), 0.85)
-  assert.equal(await button.innerText(), 'Stop')
+  assert.equal(await button.innerText(), 'Pause')
   await page.evaluate(() => window.speechTest.utterances[0].onend())
-  assert.equal(await button.innerText(), 'Stop')
-  await button.click()
+  assert.equal(await button.innerText(), 'Pause')
+  await page.locator('#btn-verse-audio-stop').click()
   await page.reload()
   assert.equal(await speed.inputValue(), '0.85')
   await button.click()
   assert.equal(await page.evaluate(() => window.speechTest.utterances[0].rate), 0.85)
+})
+
+test('stopping while paused resets the engine and permits playback again', async (t) => {
+  const page = await setup(t)
+  const button = page.locator('#btn-verse-audio')
+  await button.click()
+  await button.click()
+  assert.equal(await button.innerText(), 'Resume')
+  await page.locator('#btn-verse-audio-stop').click()
+  assert.equal(await page.evaluate(() => window.speechTest.resumed), 1)
+  assert.equal(await button.innerText(), 'Listen')
+  await button.click()
+  assert.equal(await page.evaluate(() => window.speechTest.utterances.length), 2)
+})
+
+test('changing speed while paused restarts playback without leaving the engine paused', async (t) => {
+  const page = await setup(t)
+  const button = page.locator('#btn-verse-audio')
+  await button.click()
+  await button.click()
+  await page.locator('#verse-audio-rate').selectOption('0.7')
+  assert.equal(await page.evaluate(() => window.speechTest.canceled), 1)
+  assert.equal(await page.evaluate(() => window.speechTest.resumed), 1)
+  assert.equal(await page.evaluate(() => window.speechTest.utterances[1].rate), 0.7)
+  assert.equal(await button.innerText(), 'Pause')
 })
