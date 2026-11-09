@@ -15,6 +15,7 @@ import * as sync from './sync.js'
 import * as wakelock from './wakelock.js'
 import { initLeaderboard } from './leaderboard.js'
 import { initShare } from './share.js'
+import { initVerseSpeech } from './speech.js'
 
 // 20/40/60/80회 짧은 피드백 메시지
 const MILESTONE_MSGS = {
@@ -52,6 +53,11 @@ const els = {
 }
 
 const counter = createCounter()
+const verseSpeech = initVerseSpeech({
+  container: $('verse-audio'),
+  button: $('btn-verse-audio'),
+  onError: () => showToast('Unable to play audio. Please check your device’s speech settings.'),
+})
 initLeaderboard()
 let verse = cachedCurrentWeekVerse()
 let verseLoading = !verse
@@ -118,6 +124,11 @@ function renderVerse() {
   renderDate()
   const lang = counter.getPref('lang')
   const ko = lang === 'ko'
+  verseSpeech.update({
+    visible: !ko,
+    body: !verseLoading ? verse?.bodyEn : '',
+    reference: verse?.referenceEn,
+  })
   els.btnLang.innerText = ko ? '영문' : 'Korean'
   els.btnReset.innerText = ko ? '리셋' : 'Reset'
   els.btnShare.innerText = ko ? '공유' : 'Share'
@@ -167,6 +178,7 @@ refreshVerse()
 
 async function navigateVerse(direction) {
   if (navigationBusy || verseLoading || !verse) return
+  verseSpeech.stop()
   navigationBusy = true
   ++verseRequest // 먼저 시작한 자동 조회가 탐색한 말씀을 덮어쓰지 않도록 한다.
   els.btnRefreshVerse.disabled = true
@@ -209,6 +221,7 @@ calendar = initCalendar({
   getSelectedDate: displayedDateKey,
   async onSelect(day) {
     if (navigationBusy || verseLoading) return false
+    verseSpeech.stop()
     navigationBusy = true
     ++verseRequest
     els.btnRefreshVerse.disabled = true
