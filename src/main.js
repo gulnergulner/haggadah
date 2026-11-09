@@ -56,7 +56,8 @@ const counter = createCounter()
 const verseSpeech = initVerseSpeech({
   container: $('verse-audio'),
   button: $('btn-verse-audio'),
-  stopButton: $('btn-verse-audio-stop'),
+  referenceElement: $('verse-ref'),
+  bodyElement: $('verse-body'),
   speedSelect: $('verse-audio-rate'),
   savedSpeed: counter.getPref('speechRate'),
   onSpeedChange: (speed) => counter.setPref('speechRate', speed),
@@ -159,7 +160,7 @@ function renderVerse() {
   const en = !ko && verse.bodyEn
   const ref = (en ? verse.referenceEn : verse.reference) || ''
   els.ref.innerText = ref ? `📖 ${ref}` : ''
-  els.body.innerText = (en ? verse.bodyEn : verse.bodyKo) || ''
+  els.body.textContent = (en ? verse.bodyEn : verse.bodyKo) || ''
 }
 
 renderDate()
@@ -328,9 +329,12 @@ function applyFontSize({ preferredSize } = {}) {
   }
   const fit = fitFontSize()
   if (fit === null) return
-  const key = JSON.stringify([verse.id, counter.getPref('lang'), els.ref.textContent, els.body.textContent, fontDelta])
+  const keyParts = [verse.id, counter.getPref('lang'), els.ref.textContent, els.body.textContent, fontDelta]
+  const key = JSON.stringify(keyParts)
+  // 이전 버전은 줄바꿈을 <br>로 저장해 textContent에 줄바꿈이 없었다.
+  const previousKey = JSON.stringify([keyParts[0], keyParts[1], keyParts[2], keyParts[3].replace(/\r\n?|\n/g, ''), fontDelta])
   let size = Math.max(MIN_FONT, Math.min(fit, preferredSize ?? fit + fontDelta))
-  if (preferredSize === undefined && lastFontFit?.key === key && Number.isFinite(lastFontFit.size)
+  if (preferredSize === undefined && (lastFontFit?.key === key || lastFontFit?.key === previousKey) && Number.isFinite(lastFontFit.size)
     && lastFontFit.size >= MIN_FONT && lastFontFit.size <= MAX_FONT) {
     size = Math.min(fit, lastFontFit.size)
   }

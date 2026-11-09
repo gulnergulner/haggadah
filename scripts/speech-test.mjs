@@ -8,7 +8,7 @@ let browser
 before(async () => { browser = await chromium.launch({ channel: 'msedge', headless: true }) })
 after(async () => { await browser?.close() })
 
-async function setup(t, { supported = true, english = true, longEnglish = false } = {}) {
+async function setup(t, { supported = true, english = true, longEnglish = false, multiline = false, legacyFit = false } = {}) {
   const context = await browser.newContext({ viewport: { width: 320, height: 667 }, timezoneId: 'Asia/Seoul' })
   t.after(() => context.close())
   const page = await context.newPage()
@@ -18,7 +18,7 @@ async function setup(t, { supported = true, english = true, longEnglish = false 
     id: '2026-08-30', reference: '이전 말씀', reference_en: 'Previous reference',
     body_ko: '이전 본문', body_en: 'Previous English verse',
   }] }))
-  await page.addInitScript(({ supported, english, longEnglish }) => {
+  await page.addInitScript(({ supported, english, longEnglish, multiline, legacyFit }) => {
     if (!sessionStorage.getItem('speech-test-initialized')) {
       localStorage.clear()
       localStorage.setItem('haggadah.v1', JSON.stringify({ counts: {}, lang: 'en' }))
@@ -27,8 +27,12 @@ async function setup(t, { supported = true, english = true, longEnglish = false 
           id: '2026-09-06', reference: '말씀', referenceEn: 'Deuteronomy 16:3',
           bodyKo: '한국어 말씀', bodyEn: !english ? '' : longEnglish
             ? 'Do not eat it with bread made with yeast, but for seven days eat unleavened bread, the bread of affliction, because you left Egypt in haste, so that all the days of your life you may remember the time of your departure from Egypt.'
-            : 'Remember this day.',
+            : multiline ? 'Remember this day.\nAlways keep it.' : 'Remember this day.',
         }, fetchedAt: Date.now(),
+      }))
+      if (legacyFit) localStorage.setItem('haggadah.verseFontFit.v1', JSON.stringify({
+        key: JSON.stringify(['2026-09-06', 'en', '📖 Deuteronomy 16:3', 'Remember this day.Always keep it.', 0]),
+        size: 14,
       }))
       sessionStorage.setItem('speech-test-initialized', '1')
     }
@@ -50,12 +54,12 @@ async function setup(t, { supported = true, english = true, longEnglish = false 
       delete window.speechSynthesis
       delete window.SpeechSynthesisUtterance
     }
-  }, { supported, english, longEnglish })
+  }, { supported, english, longEnglish, multiline, legacyFit })
   await page.goto(BASE)
   return page
 }
 
-test('plays, pauses, resumes and stops the English verse without starting a new utterance', async (t) => {
+test('plays, pauses and resumes the English verse without starting a new utterance', async (t) => {
   const page = await setup(t)
   const button = page.locator('#btn-verse-audio')
   assert.ok(await button.isVisible())
@@ -74,8 +78,9 @@ test('plays, pauses, resumes and stops the English verse without starting a new 
   assert.equal(await button.innerText(), 'Pause')
   assert.equal(await page.evaluate(() => window.speechTest.resumed), 1)
   assert.equal(await page.evaluate(() => window.speechTest.utterances.length), 1)
-  await page.locator('#btn-verse-audio-stop').click()
-  assert.equal(await page.evaluate(() => window.speechTest.canceled), 1)
+  assert.equal(await page.locator('#btn-verse-audio-stop').count(), 0)
+  await page.evaluate(() => window.speechTest.utterances[0].onend())
+  assert.equal(await button.innerText(), 'Listen')
   await button.click()
   await page.evaluate(() => window.speechTest.utterances[0].onend())
   assert.equal(await button.innerText(), 'Pause', 'an old end event does not stop new playback')
@@ -139,20 +144,19 @@ test('speed changes restart playback and persist across reloads', async (t) => {
   assert.equal(await button.innerText(), 'Pause')
   await page.evaluate(() => window.speechTest.utterances[0].onend())
   assert.equal(await button.innerText(), 'Pause')
-  await page.locator('#btn-verse-audio-stop').click()
   await page.reload()
   assert.equal(await speed.inputValue(), '0.85')
   await button.click()
   assert.equal(await page.evaluate(() => window.speechTest.utterances[0].rate), 0.85)
 })
 
-test('stopping while paused resets the engine and permits playback again', async (t) => {
+test('leaving while paused resets the engine and permits playback again', async (t) => {
   const page = await setup(t)
   const button = page.locator('#btn-verse-audio')
   await button.click()
   await button.click()
   assert.equal(await button.innerText(), 'Resume')
-  await page.locator('#btn-verse-audio-stop').click()
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide')))
   assert.equal(await page.evaluate(() => window.speechTest.resumed), 1)
   assert.equal(await button.innerText(), 'Listen')
   await button.click()
@@ -183,13 +187,58 @@ test('audio controls appear below the verse with play and pause at the right', a
       }
       return { body: box('#verse-body'), audio: box('#verse-audio'),
         speed: box('.verse-audio-speed'), button: box('#btn-verse-audio'),
-        stop: box('#btn-verse-audio-stop'), width: document.documentElement.scrollWidth }
+        width: document.documentElement.scrollWidth }
     })
     assert.ok(layout.body.bottom <= layout.audio.top, `${state}: controls are below text`)
     assert.ok(layout.speed.right <= layout.button.left, `${state}: play button is to the right`)
     assert.ok(layout.button.right <= 320 && layout.width <= 320, `${state}: controls fit screen`)
-    if (state !== 'idle') assert.ok(layout.stop.right <= layout.button.left, `${state}: stop is before play`)
   }
+})
+
+test('highlights the spoken reference and words, preserves line breaks, and clears on completion', async (t) => {
+  const page = await setup(t, { multiline: true })
+  const button = page.locator('#btn-verse-audio')
+  const highlight = page.locator('.verse-spoken-word')
+  await button.click()
+  await page.evaluate(() => window.speechTest.utterances[0].onboundary({ name: 'word', charIndex: 0, charLength: 11 }))
+  assert.equal(await page.locator('#verse-ref .verse-spoken-word').innerText(), 'Deuteronomy')
+  await page.evaluate(() => {
+    const utterance = window.speechTest.utterances[0]
+    utterance.onboundary({ name: 'word', charIndex: utterance.text.indexOf('Remember'), charLength: 8 })
+  })
+  assert.equal(await page.locator('#verse-body .verse-spoken-word').innerText(), 'Remember')
+  assert.equal(await page.locator('#verse-body').textContent(), 'Remember this day.\nAlways keep it.')
+  await button.click()
+  assert.equal(await highlight.innerText(), 'Remember', 'pause keeps the current highlight')
+  await button.click()
+  await page.evaluate(() => {
+    const utterance = window.speechTest.utterances[0]
+    utterance.onboundary({ name: 'word', charIndex: utterance.text.indexOf('Always'), charLength: 0 })
+  })
+  assert.equal(await highlight.innerText(), 'Always', 'word boundaries without length are supported')
+  assert.equal(await page.locator('#verse-body').innerText(), 'Remember this day.\nAlways keep it.')
+  await page.evaluate(() => window.speechTest.utterances[0].onend())
+  assert.equal(await highlight.count(), 0)
+  assert.equal(await page.locator('#verse-body').textContent(), 'Remember this day.\nAlways keep it.')
+})
+
+test('stale boundaries do not highlight new speech and language changes clear the highlight', async (t) => {
+  const page = await setup(t)
+  await page.locator('#btn-verse-audio').click()
+  await page.evaluate(() => {
+    const utterance = window.speechTest.utterances[0]
+    utterance.onboundary({ name: 'word', charIndex: utterance.text.indexOf('Remember'), charLength: 8 })
+  })
+  assert.equal(await page.locator('.verse-spoken-word').count(), 1)
+  await page.locator('#verse-audio-rate').selectOption('0.7')
+  assert.equal(await page.locator('.verse-spoken-word').count(), 0)
+  await page.evaluate(() => window.speechTest.utterances[0].onboundary({ name: 'word', charIndex: 0, charLength: 11 }))
+  assert.equal(await page.locator('.verse-spoken-word').count(), 0)
+  await page.evaluate(() => window.speechTest.utterances[1].onboundary({ name: 'word', charIndex: 0, charLength: 11 }))
+  assert.equal(await page.locator('.verse-spoken-word').count(), 1)
+  await page.locator('#btn-lang').click()
+  assert.equal(await page.locator('.verse-spoken-word').count(), 0)
+  assert.equal(await page.locator('#verse-body').textContent(), '한국어 말씀')
 })
 
 test('English font remains stable on return and manual font controls adjust from its current size', async (t) => {
@@ -211,4 +260,16 @@ test('English font remains stable on return and manual font controls adjust from
   assert.equal(await fontSize(), decreased + 4, 'increase adjusts from the current size')
   await page.evaluate(() => window.dispatchEvent(new Event('resize')))
   assert.equal(await fontSize(), decreased + 4, 'automatic fitting keeps the manually increased size')
+})
+
+test('preserves the previously saved font size for a verse with line breaks', async (t) => {
+  const page = await setup(t, { multiline: true, legacyFit: true })
+  assert.equal(await page.locator('#verse-body').evaluate((el) => getComputedStyle(el).fontSize), '14px')
+  await page.locator('#btn-verse-audio').click()
+  await page.evaluate(() => {
+    const utterance = window.speechTest.utterances[0]
+    utterance.onboundary({ name: 'word', charIndex: utterance.text.indexOf('Always'), charLength: 6 })
+    window.dispatchEvent(new Event('resize'))
+  })
+  assert.equal(await page.locator('#verse-body').evaluate((el) => getComputedStyle(el).fontSize), '14px')
 })
