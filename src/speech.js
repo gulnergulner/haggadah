@@ -1,7 +1,5 @@
 import { createElement, Volume2, Pause, Play } from 'lucide'
 
-const HIGHLIGHT_NAME = 'verse-spoken-word'
-
 // 음성 합성은 기기에 맡기며, 화면에 표시된 영문 말씀이 바뀌면 재생을 멈춘다.
 export function initVerseSpeech({ container, button, referenceElement, bodyElement, speedSelect, savedSpeed, onSpeedChange, onError }) {
   const synth = window.speechSynthesis
@@ -12,8 +10,6 @@ export function initVerseSpeech({ container, button, referenceElement, bodyEleme
   let request = 0
   let spokenReference = ''
   let spokenBody = ''
-  const highlights = window.CSS?.highlights
-  const useNativeHighlight = !!highlights && typeof window.Highlight === 'function'
   let activeRange = null
   let overlays = []
   speedSelect.value = [...speedSelect.options].some((option) => Number(option.value) === savedSpeed)
@@ -42,7 +38,7 @@ export function initVerseSpeech({ container, button, referenceElement, bodyEleme
     overlays = []
   }
 
-  function renderFallbackHighlight() {
+  function renderHighlight() {
     clearOverlays()
     if (!activeRange || !activeRange.startContainer.isConnected) return
     const clip = bodyElement.closest('.verse-main')?.getBoundingClientRect()
@@ -64,7 +60,6 @@ export function initVerseSpeech({ container, button, referenceElement, bodyEleme
   }
 
   function clearHighlight() {
-    if (useNativeHighlight) highlights.delete(HIGHLIGHT_NAME)
     clearOverlays()
     activeRange = null
   }
@@ -111,8 +106,7 @@ export function initVerseSpeech({ container, button, referenceElement, bodyEleme
     const range = textRange(element, start, end)
     if (!range) return
     activeRange = range
-    if (useNativeHighlight) highlights.set(HIGHLIGHT_NAME, new Highlight(range))
-    else renderFallbackHighlight()
+    renderHighlight()
   }
 
   function stop() {
@@ -191,15 +185,14 @@ export function initVerseSpeech({ container, button, referenceElement, bodyEleme
   })
 
   window.addEventListener('pagehide', stop)
-  if (!useNativeHighlight) {
-    const scheduleHighlight = () => queueMicrotask(renderFallbackHighlight)
-    window.addEventListener('resize', scheduleHighlight)
-    window.addEventListener('scroll', scheduleHighlight, true)
-    document.fonts?.ready.then(scheduleHighlight)
-  }
+  const scheduleHighlight = () => queueMicrotask(renderHighlight)
+  window.addEventListener('resize', scheduleHighlight)
+  window.addEventListener('scroll', scheduleHighlight, true)
+  document.fonts?.ready.then(scheduleHighlight)
   render()
   return {
     stop,
+    refreshHighlight: renderHighlight,
     update({ visible, body, reference }) {
       const nextBody = visible ? body?.trim() || '' : ''
       const nextReference = nextBody ? reference?.trim() || '' : ''

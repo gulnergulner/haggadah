@@ -161,6 +161,7 @@ body {
   margin: 0 auto;
   padding: 6px 20px 10px;
   overflow-y: auto; /* 자동 맞춤 실패 시에만 스크롤 (평소에는 안 생김) */
+  touch-action: pan-y;
 }
 
 .verse-card {
@@ -195,7 +196,6 @@ body {
 .verse-audio-btn:hover:not(:disabled) { background: #e4e7ff; }
 .verse-audio-btn:focus-visible { outline: 2px solid var(--badge-text); outline-offset: 2px; }
 .verse-audio-btn:disabled { opacity: 0.5; cursor: default; }
-::highlight(verse-spoken-word) { background: #fff0aa; }
 .verse-spoken-overlay {
   position: fixed;
   z-index: 2;

@@ -159,8 +159,11 @@ function renderVerse() {
   }
   const en = !ko && verse.bodyEn
   const ref = (en ? verse.referenceEn : verse.reference) || ''
-  els.ref.innerText = ref ? `📖 ${ref}` : ''
-  els.body.textContent = (en ? verse.bodyEn : verse.bodyKo) || ''
+  const referenceText = ref ? `📖 ${ref}` : ''
+  const bodyText = (en ? verse.bodyEn : verse.bodyKo) || ''
+  // 같은 말씀을 다시 확인할 때 재생 중인 글자 범위를 유지한다.
+  if (els.ref.textContent !== referenceText) els.ref.textContent = referenceText
+  if (els.body.textContent !== bodyText) els.body.textContent = bodyText
 }
 
 renderDate()
@@ -293,6 +296,7 @@ els.btnLang.addEventListener('click', () => {
 // 사용자는 -/+ 버튼으로 자동 크기에서 줄이는 방향의 보정만 저장한다.
 const MIN_FONT = 12
 const MAX_FONT = 44
+const MAX_MANUAL_FONT = 80
 const FONT_FIT_KEY = 'haggadah.verseFontFit.v1'
 let fontDelta = parseInt(localStorage.getItem('verseFontDelta'), 10) || 0
 let lastFontFit = null
@@ -300,6 +304,7 @@ try { lastFontFit = JSON.parse(localStorage.getItem(FONT_FIT_KEY)) } catch { /* 
 
 const verseMain = document.querySelector('.verse-main')
 const verseCard = document.querySelector('.verse-card')
+let pinchGesture = null
 
 // 이진 탐색으로 컨테이너를 넘치지 않는 최대 폰트 크기를 찾는다
 function fitFontSize() {
@@ -322,39 +327,107 @@ function fitFontSize() {
   return best
 }
 
-function applyFontSize({ preferredSize } = {}) {
+function fontFitKeys() {
+  const keyParts = [verse.id, counter.getPref('lang'), els.ref.textContent, els.body.textContent, fontDelta]
+  return {
+    key: JSON.stringify(keyParts),
+    // 이전 버전은 줄바꿈을 <br>로 저장해 textContent에 줄바꿈이 없었다.
+    previousKey: JSON.stringify([keyParts[0], keyParts[1], keyParts[2], keyParts[3].replace(/\r\n?|\n/g, ''), fontDelta]),
+  }
+}
+
+function rememberFontSize(key, size, manual = false) {
+  lastFontFit = { key, size, ...(manual && { manual: true }) }
+  try { localStorage.setItem(FONT_FIT_KEY, JSON.stringify(lastFontFit)) } catch { /* 저장할 수 없어도 화면은 유지 */ }
+}
+
+function applyFontSize({ preferredSize, keepManual = false } = {}) {
+  if (pinchGesture) return
   if (verseLoading || !verse) {
     verseCard.style.fontSize = '20px'
     return
   }
   const fit = fitFontSize()
   if (fit === null) return
-  const keyParts = [verse.id, counter.getPref('lang'), els.ref.textContent, els.body.textContent, fontDelta]
-  const key = JSON.stringify(keyParts)
-  // 이전 버전은 줄바꿈을 <br>로 저장해 textContent에 줄바꿈이 없었다.
-  const previousKey = JSON.stringify([keyParts[0], keyParts[1], keyParts[2], keyParts[3].replace(/\r\n?|\n/g, ''), fontDelta])
-  let size = Math.max(MIN_FONT, Math.min(fit, preferredSize ?? fit + fontDelta))
+  const { key, previousKey } = fontFitKeys()
+  let manual = keepManual
+  let size = Math.max(MIN_FONT, Math.min(manual ? MAX_MANUAL_FONT : fit, preferredSize ?? fit + fontDelta))
   if (preferredSize === undefined && (lastFontFit?.key === key || lastFontFit?.key === previousKey) && Number.isFinite(lastFontFit.size)
-    && lastFontFit.size >= MIN_FONT && lastFontFit.size <= MAX_FONT) {
-    size = Math.min(fit, lastFontFit.size)
+    && lastFontFit.size >= MIN_FONT && lastFontFit.size <= MAX_MANUAL_FONT) {
+    manual = lastFontFit.manual === true
+    size = Math.min(manual ? MAX_MANUAL_FONT : fit, lastFontFit.size)
   }
   verseCard.style.fontSize = `${size}px`
-  lastFontFit = { key, size }
-  try { localStorage.setItem(FONT_FIT_KEY, JSON.stringify(lastFontFit)) } catch { /* 저장할 수 없어도 화면은 유지 */ }
+  rememberFontSize(key, size, manual)
+  verseSpeech.refreshHighlight()
 }
 
 els.fontIncrease.addEventListener('click', () => {
   const currentSize = parseFloat(getComputedStyle(verseCard).fontSize)
+  const keepManual = lastFontFit?.manual === true
   fontDelta = Math.min(0, fontDelta + 4)
   localStorage.setItem('verseFontDelta', fontDelta)
-  applyFontSize({ preferredSize: currentSize + 4 })
+  applyFontSize({ preferredSize: currentSize + 4, keepManual })
 })
 els.fontDecrease.addEventListener('click', () => {
   const currentSize = parseFloat(getComputedStyle(verseCard).fontSize)
+  const keepManual = lastFontFit?.manual === true
   fontDelta = Math.max(-(MAX_FONT - MIN_FONT), fontDelta - 4)
   localStorage.setItem('verseFontDelta', fontDelta)
-  applyFontSize({ preferredSize: currentSize - 4 })
+  applyFontSize({ preferredSize: currentSize - 4, keepManual })
 })
+
+// 말씀 영역의 두 손가락 거리로 글자만 확대한다. 듣기 컨트롤은 일반 터치로 동작한다.
+function touchDistance(touches) {
+  return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY)
+}
+
+function finishPinch() {
+  if (!pinchGesture) return
+  const gesture = pinchGesture
+  pinchGesture = null
+  if (verseLoading || !verse) return
+  const { key } = fontFitKeys()
+  if (key !== gesture.key) {
+    applyFontSize()
+  } else if (gesture.changed) {
+    rememberFontSize(key, gesture.size, true)
+    verseSpeech.refreshHighlight()
+  }
+}
+
+verseMain.addEventListener('touchstart', (event) => {
+  if (event.touches.length !== 2) {
+    if (event.touches.length > 2) finishPinch()
+    return
+  }
+  if (verseLoading || !verse) return
+  for (const touch of Array.from(event.touches)) {
+    const target = touch.target instanceof Element ? touch.target : touch.target?.parentElement
+    if (!target || !verseMain.contains(target) || target.closest('.verse-audio, button, select, input, textarea, a, label')) return
+  }
+  const distance = touchDistance(event.touches)
+  if (distance < 10) return
+  const size = parseFloat(getComputedStyle(verseCard).fontSize)
+  pinchGesture = { distance, startSize: size, size, changed: false, key: fontFitKeys().key }
+  if (event.cancelable) event.preventDefault()
+}, { passive: false })
+
+verseMain.addEventListener('touchmove', (event) => {
+  if (!pinchGesture || event.touches.length !== 2) return
+  if (event.cancelable) event.preventDefault()
+  const size = Math.max(MIN_FONT, Math.min(MAX_MANUAL_FONT,
+    Math.round(pinchGesture.startSize * touchDistance(event.touches) / pinchGesture.distance)))
+  if (size === pinchGesture.size) return
+  pinchGesture.size = size
+  pinchGesture.changed = true
+  verseCard.style.fontSize = `${size}px`
+  verseSpeech.refreshHighlight()
+}, { passive: false })
+
+verseMain.addEventListener('touchend', (event) => { if (event.touches.length < 2) finishPinch() })
+verseMain.addEventListener('touchcancel', finishPinch)
+window.addEventListener('pagehide', finishPinch)
 
 applyFontSize()
 window.addEventListener('resize', applyFontSize)

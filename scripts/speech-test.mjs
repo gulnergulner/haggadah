@@ -62,8 +62,22 @@ async function setup(t, { supported = true, english = true, longEnglish = false,
 
 async function highlightedText(page) {
   return page.evaluate(() => {
-    const highlight = CSS.highlights.get('verse-spoken-word')
-    return highlight ? [...highlight].map((range) => range.toString()).join('') : ''
+    const overlay = document.querySelector('.verse-spoken-overlay')?.getBoundingClientRect()
+    if (!overlay) return ''
+    for (const element of [document.getElementById('verse-ref'), document.getElementById('verse-body')]) {
+      const text = element.firstChild
+      if (!text || text.nodeType !== Node.TEXT_NODE) continue
+      for (const match of text.textContent.matchAll(/[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu)) {
+        const range = document.createRange()
+        range.setStart(text, match.index)
+        range.setEnd(text, match.index + match[0].length)
+        for (const rect of range.getClientRects()) {
+          if (Math.abs(rect.x - overlay.x) < 0.1 && Math.abs(rect.y - overlay.y) < 0.1
+            && Math.abs(rect.width - overlay.width) < 0.1) return match[0]
+        }
+      }
+    }
+    return ''
   })
 }
 
@@ -248,8 +262,30 @@ test('stale boundaries do not highlight new speech and language changes clear th
   assert.equal(await page.locator('#verse-body').textContent(), '한국어 말씀')
 })
 
+test('highlight keeps following words when the same verse is refreshed during playback', async (t) => {
+  const page = await setup(t)
+  await page.locator('#btn-verse-audio').click()
+  await page.evaluate(() => {
+    const utterance = window.speechTest.utterances[0]
+    utterance.onboundary({ name: 'word', charIndex: utterance.text.indexOf('Remember'), charLength: 8 })
+    window.bodyBeforeRefresh = document.querySelector('#verse-body').firstChild
+  })
+  assert.equal(await highlightedText(page), 'Remember')
+  await page.evaluate(async () => {
+    window.dispatchEvent(new Event('online'))
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+  assert.equal(await page.evaluate(() => document.querySelector('#verse-body').firstChild === window.bodyBeforeRefresh), true)
+  await page.evaluate(() => {
+    const utterance = window.speechTest.utterances[0]
+    utterance.onboundary({ name: 'word', charIndex: utterance.text.indexOf('this'), charLength: 4 })
+  })
+  assert.equal(await highlightedText(page), 'this')
+})
+
 for (const fallbackHighlight of [false, true]) {
-  test(`spoken-word highlighting preserves text nodes and layout (${fallbackHighlight ? 'fallback' : 'native'})`, async (t) => {
+  test(`spoken-word highlighting moves while preserving layout (CSS Highlight API ${fallbackHighlight ? 'unavailable' : 'available'})`, async (t) => {
     const page = await setup(t, { longEnglish: true, fallbackHighlight })
     await page.evaluate(() => document.fonts.ready)
     await page.locator('#btn-verse-audio').click()
@@ -284,8 +320,7 @@ for (const fallbackHighlight of [false, true]) {
       assert.equal(await page.evaluate(() => document.querySelector('#verse-body').firstChild === window.originalVerseNode), true)
       assert.equal(await page.evaluate(() => window.getSelection().toString()), 'Do', 'user text selection is preserved')
       assert.deepEqual(await measure(), initial, `${word}: text and line positions do not change`)
-      if (!fallbackHighlight) assert.equal(await highlightedText(page), word)
-      else assert.ok(await page.locator('.verse-spoken-overlay').count(), `${word}: fallback is visible`)
+      assert.equal(await highlightedText(page), word, `${word}: highlight follows the spoken word`)
     }
     if (fallbackHighlight) {
       const geometry = await page.evaluate(() => {
@@ -303,7 +338,7 @@ for (const fallbackHighlight of [false, true]) {
     }
     await page.evaluate(() => window.speechTest.utterances[0].onend())
     assert.equal(await page.locator('.verse-spoken-overlay').count(), 0)
-    if (!fallbackHighlight) assert.equal(await highlightedText(page), '')
+    assert.equal(await highlightedText(page), '')
     assert.deepEqual(await measure(), initial, 'text stays in place after playback')
   })
 }
