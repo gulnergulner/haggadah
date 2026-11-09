@@ -8,7 +8,7 @@ let browser
 before(async () => { browser = await chromium.launch({ channel: 'msedge', headless: true }) })
 after(async () => { await browser?.close() })
 
-async function setup(t, { supported = true, english = true, longEnglish = false, multiline = false, legacyFit = false } = {}) {
+async function setup(t, { supported = true, english = true, longEnglish = false, multiline = false, legacyFit = false, fallbackHighlight = false } = {}) {
   const context = await browser.newContext({ viewport: { width: 320, height: 667 }, timezoneId: 'Asia/Seoul' })
   t.after(() => context.close())
   const page = await context.newPage()
@@ -18,7 +18,7 @@ async function setup(t, { supported = true, english = true, longEnglish = false,
     id: '2026-08-30', reference: '이전 말씀', reference_en: 'Previous reference',
     body_ko: '이전 본문', body_en: 'Previous English verse',
   }] }))
-  await page.addInitScript(({ supported, english, longEnglish, multiline, legacyFit }) => {
+  await page.addInitScript(({ supported, english, longEnglish, multiline, legacyFit, fallbackHighlight }) => {
     if (!sessionStorage.getItem('speech-test-initialized')) {
       localStorage.clear()
       localStorage.setItem('haggadah.v1', JSON.stringify({ counts: {}, lang: 'en' }))
@@ -37,6 +37,7 @@ async function setup(t, { supported = true, english = true, longEnglish = false,
       sessionStorage.setItem('speech-test-initialized', '1')
     }
     window.speechTest = { utterances: [], canceled: 0, paused: 0, resumed: 0 }
+    if (fallbackHighlight) Object.defineProperty(CSS, 'highlights', { configurable: true, value: undefined })
     if (supported) {
       window.SpeechSynthesisUtterance = class { constructor(text) { this.text = text } }
       Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: {
@@ -54,9 +55,16 @@ async function setup(t, { supported = true, english = true, longEnglish = false,
       delete window.speechSynthesis
       delete window.SpeechSynthesisUtterance
     }
-  }, { supported, english, longEnglish, multiline, legacyFit })
+  }, { supported, english, longEnglish, multiline, legacyFit, fallbackHighlight })
   await page.goto(BASE)
   return page
+}
+
+async function highlightedText(page) {
+  return page.evaluate(() => {
+    const highlight = CSS.highlights.get('verse-spoken-word')
+    return highlight ? [...highlight].map((range) => range.toString()).join('') : ''
+  })
 }
 
 test('plays, pauses and resumes the English verse without starting a new utterance', async (t) => {
@@ -198,27 +206,26 @@ test('audio controls appear below the verse with play and pause at the right', a
 test('highlights the spoken reference and words, preserves line breaks, and clears on completion', async (t) => {
   const page = await setup(t, { multiline: true })
   const button = page.locator('#btn-verse-audio')
-  const highlight = page.locator('.verse-spoken-word')
   await button.click()
   await page.evaluate(() => window.speechTest.utterances[0].onboundary({ name: 'word', charIndex: 0, charLength: 11 }))
-  assert.equal(await page.locator('#verse-ref .verse-spoken-word').innerText(), 'Deuteronomy')
+  assert.equal(await highlightedText(page), 'Deuteronomy')
   await page.evaluate(() => {
     const utterance = window.speechTest.utterances[0]
     utterance.onboundary({ name: 'word', charIndex: utterance.text.indexOf('Remember'), charLength: 8 })
   })
-  assert.equal(await page.locator('#verse-body .verse-spoken-word').innerText(), 'Remember')
+  assert.equal(await highlightedText(page), 'Remember')
   assert.equal(await page.locator('#verse-body').textContent(), 'Remember this day.\nAlways keep it.')
   await button.click()
-  assert.equal(await highlight.innerText(), 'Remember', 'pause keeps the current highlight')
+  assert.equal(await highlightedText(page), 'Remember', 'pause keeps the current highlight')
   await button.click()
   await page.evaluate(() => {
     const utterance = window.speechTest.utterances[0]
     utterance.onboundary({ name: 'word', charIndex: utterance.text.indexOf('Always'), charLength: 0 })
   })
-  assert.equal(await highlight.innerText(), 'Always', 'word boundaries without length are supported')
+  assert.equal(await highlightedText(page), 'Always', 'word boundaries without length are supported')
   assert.equal(await page.locator('#verse-body').innerText(), 'Remember this day.\nAlways keep it.')
   await page.evaluate(() => window.speechTest.utterances[0].onend())
-  assert.equal(await highlight.count(), 0)
+  assert.equal(await highlightedText(page), '')
   assert.equal(await page.locator('#verse-body').textContent(), 'Remember this day.\nAlways keep it.')
 })
 
@@ -229,17 +236,77 @@ test('stale boundaries do not highlight new speech and language changes clear th
     const utterance = window.speechTest.utterances[0]
     utterance.onboundary({ name: 'word', charIndex: utterance.text.indexOf('Remember'), charLength: 8 })
   })
-  assert.equal(await page.locator('.verse-spoken-word').count(), 1)
+  assert.equal(await highlightedText(page), 'Remember')
   await page.locator('#verse-audio-rate').selectOption('0.7')
-  assert.equal(await page.locator('.verse-spoken-word').count(), 0)
+  assert.equal(await highlightedText(page), '')
   await page.evaluate(() => window.speechTest.utterances[0].onboundary({ name: 'word', charIndex: 0, charLength: 11 }))
-  assert.equal(await page.locator('.verse-spoken-word').count(), 0)
+  assert.equal(await highlightedText(page), '')
   await page.evaluate(() => window.speechTest.utterances[1].onboundary({ name: 'word', charIndex: 0, charLength: 11 }))
-  assert.equal(await page.locator('.verse-spoken-word').count(), 1)
+  assert.equal(await highlightedText(page), 'Deuteronomy')
   await page.locator('#btn-lang').click()
-  assert.equal(await page.locator('.verse-spoken-word').count(), 0)
+  assert.equal(await highlightedText(page), '')
   assert.equal(await page.locator('#verse-body').textContent(), '한국어 말씀')
 })
+
+for (const fallbackHighlight of [false, true]) {
+  test(`spoken-word highlighting preserves text nodes and layout (${fallbackHighlight ? 'fallback' : 'native'})`, async (t) => {
+    const page = await setup(t, { longEnglish: true, fallbackHighlight })
+    await page.evaluate(() => document.fonts.ready)
+    await page.locator('#btn-verse-audio').click()
+    const measure = () => page.evaluate(() => {
+      const element = document.getElementById('verse-body')
+      const node = element.firstChild
+      const positions = []
+      for (let i = 0; i < node.length; i++) {
+        const range = document.createRange()
+        range.setStart(node, i)
+        range.setEnd(node, i + 1)
+        positions.push([...range.getClientRects()].map((r) => [r.x, r.y, r.width, r.height]))
+      }
+      const rect = element.getBoundingClientRect()
+      return { positions, bounds: [rect.x, rect.y, rect.width, rect.height] }
+    })
+    await page.evaluate(() => {
+      window.originalVerseNode = document.querySelector('#verse-body').firstChild
+      const selection = window.getSelection()
+      const range = document.createRange()
+      range.setStart(window.originalVerseNode, 0)
+      range.setEnd(window.originalVerseNode, 2)
+      selection.removeAllRanges()
+      selection.addRange(range)
+    })
+    const initial = await measure()
+    for (const word of ['Do', 'unleavened', 'affliction', 'departure']) {
+      await page.evaluate((word) => {
+        const utterance = window.speechTest.utterances[0]
+        utterance.onboundary({ name: 'word', charIndex: utterance.text.indexOf(word), charLength: word.length })
+      }, word)
+      assert.equal(await page.evaluate(() => document.querySelector('#verse-body').firstChild === window.originalVerseNode), true)
+      assert.equal(await page.evaluate(() => window.getSelection().toString()), 'Do', 'user text selection is preserved')
+      assert.deepEqual(await measure(), initial, `${word}: text and line positions do not change`)
+      if (!fallbackHighlight) assert.equal(await highlightedText(page), word)
+      else assert.ok(await page.locator('.verse-spoken-overlay').count(), `${word}: fallback is visible`)
+    }
+    if (fallbackHighlight) {
+      const geometry = await page.evaluate(() => {
+        const text = document.querySelector('#verse-body').firstChild
+        const range = document.createRange()
+        const start = text.textContent.indexOf('departure')
+        range.setStart(text, start)
+        range.setEnd(text, start + 'departure'.length)
+        const target = range.getBoundingClientRect()
+        const overlay = document.querySelector('.verse-spoken-overlay').getBoundingClientRect()
+        return { target: [target.x, target.y, target.width, target.height],
+          overlay: [overlay.x, overlay.y, overlay.width, overlay.height] }
+      })
+      assert.deepEqual(geometry.overlay, geometry.target)
+    }
+    await page.evaluate(() => window.speechTest.utterances[0].onend())
+    assert.equal(await page.locator('.verse-spoken-overlay').count(), 0)
+    if (!fallbackHighlight) assert.equal(await highlightedText(page), '')
+    assert.deepEqual(await measure(), initial, 'text stays in place after playback')
+  })
+}
 
 test('English font remains stable on return and manual font controls adjust from its current size', async (t) => {
   const page = await setup(t, { longEnglish: true })
@@ -260,6 +327,27 @@ test('English font remains stable on return and manual font controls adjust from
   assert.equal(await fontSize(), decreased + 4, 'increase adjusts from the current size')
   await page.evaluate(() => window.dispatchEvent(new Event('resize')))
   assert.equal(await fontSize(), decreased + 4, 'automatic fitting keeps the manually increased size')
+})
+
+test('fallback highlight follows the word after the viewport changes', async (t) => {
+  const page = await setup(t, { longEnglish: true, fallbackHighlight: true })
+  await page.locator('#btn-verse-audio').click()
+  await page.evaluate(() => {
+    const utterance = window.speechTest.utterances[0]
+    utterance.onboundary({ name: 'word', charIndex: utterance.text.indexOf('unleavened'), charLength: 10 })
+  })
+  await page.setViewportSize({ width: 375, height: 667 })
+  await page.evaluate(() => window.dispatchEvent(new Event('resize')))
+  await page.waitForFunction(() => {
+    const text = document.querySelector('#verse-body').firstChild
+    const range = document.createRange()
+    const start = text.textContent.indexOf('unleavened')
+    range.setStart(text, start)
+    range.setEnd(text, start + 10)
+    const target = range.getBoundingClientRect()
+    const overlay = document.querySelector('.verse-spoken-overlay')?.getBoundingClientRect()
+    return overlay && Math.abs(overlay.x - target.x) < 0.1 && Math.abs(overlay.y - target.y) < 0.1
+  })
 })
 
 test('preserves the previously saved font size for a verse with line breaks', async (t) => {

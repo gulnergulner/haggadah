@@ -195,11 +195,14 @@ body {
 .verse-audio-btn:hover:not(:disabled) { background: #e4e7ff; }
 .verse-audio-btn:focus-visible { outline: 2px solid var(--badge-text); outline-offset: 2px; }
 .verse-audio-btn:disabled { opacity: 0.5; cursor: default; }
-.verse-spoken-word {
-  background: #fff0aa;
+::highlight(verse-spoken-word) { background: #fff0aa; }
+.verse-spoken-overlay {
+  position: fixed;
+  z-index: 2;
+  pointer-events: none;
+  background: rgba(255, 224, 102, 0.45);
+  mix-blend-mode: multiply;
   border-radius: 0.2em;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
 }
 .verse-audio-speed {
   display: inline-flex;
