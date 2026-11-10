@@ -16,7 +16,7 @@ export function initVerseSpeech({ container, button, referenceElement, bodyEleme
     ? String(savedSpeed) : '1'
 
   function render() {
-    const label = !supported ? 'Audio unavailable' : !content ? 'English unavailable'
+    const label = !supported ? 'No audio' : !content ? 'No verse'
       : state === 'playing' ? 'Pause' : state === 'paused' ? 'Resume' : 'Listen'
     button.replaceChildren(
       createElement(state === 'playing' ? Pause : state === 'paused' ? Play : Volume2, {

@@ -177,13 +177,23 @@ body {
   margin-bottom: 14px;
 }
 
-.verse-audio { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin: 16px 0 0; }
+.verse-audio {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 0;
+}
 .verse-audio-btn {
+  grid-column: 3;
+  justify-self: start;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
   min-height: 38px;
+  min-width: 0;
+  max-width: 100%;
   padding: 7px 15px;
   border: 1px solid #d8dcf5;
   border-radius: 999px;
@@ -205,6 +215,7 @@ body {
   border-radius: 0.2em;
 }
 .verse-audio-speed {
+  grid-column: 2;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -221,10 +232,12 @@ body {
 .verse-audio-speed select { border: 0; background: transparent; color: var(--text); font: inherit; min-height: 36px; cursor: pointer; }
 .verse-audio-speed select:focus-visible { outline: 2px solid var(--badge-text); outline-offset: 2px; }
 .verse-audio-speed:has(select:disabled) { opacity: 0.5; }
-@media (max-width: 360px) {
+@media (max-width: 400px) {
   .verse-audio { gap: 6px; }
-  .verse-audio-btn { padding-inline: 10px; }
-  .verse-audio-speed { gap: 5px; padding-inline: 9px 7px; }
+  .verse-audio-btn { gap: 4px; padding-inline: 6px; font-size: 13px; }
+  .verse-audio-btn:disabled { font-size: 11px; overflow-wrap: anywhere; }
+  .verse-audio-speed { gap: 3px; padding-inline: 6px; font-size: 12px; }
+  .verse-audio-speed select { width: 46px; }
 }
 
 .verse-refresh {

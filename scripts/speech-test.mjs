@@ -144,10 +144,12 @@ test('playback errors allow retry and leaving the page stops speech', async (t) 
 test('unavailable speech or missing English content leaves an explanatory disabled button', async (t) => {
   const unsupported = await setup(t, { supported: false })
   assert.ok(await unsupported.locator('#btn-verse-audio').isDisabled())
+  assert.equal(await unsupported.locator('#btn-verse-audio').innerText(), 'No audio')
   assert.ok(await unsupported.locator('#verse-audio-rate').isDisabled())
   assert.match(await unsupported.locator('#btn-verse-audio').getAttribute('title'), /not supported/)
   const missing = await setup(t, { english: false })
   assert.ok(await missing.locator('#btn-verse-audio').isDisabled())
+  assert.equal(await missing.locator('#btn-verse-audio').innerText(), 'No verse')
   assert.ok(await missing.locator('#verse-audio-rate').isDisabled())
   assert.match(await missing.locator('#btn-verse-audio').getAttribute('title'), /No English verse/)
 })
@@ -197,23 +199,30 @@ test('changing speed while paused restarts playback without leaving the engine p
   assert.equal(await button.innerText(), 'Pause')
 })
 
-test('audio controls appear below the verse with play and pause at the right', async (t) => {
+test('speed stays centered below the verse with play and pause to its right', async (t) => {
   const page = await setup(t, { longEnglish: true })
   const button = page.locator('#btn-verse-audio')
-  for (const state of ['idle', 'playing', 'paused']) {
-    if (state !== 'idle') await button.click()
-    const layout = await page.evaluate(() => {
-      const box = (selector) => {
-        const r = document.querySelector(selector).getBoundingClientRect()
-        return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }
-      }
-      return { body: box('#verse-body'), audio: box('#verse-audio'),
-        speed: box('.verse-audio-speed'), button: box('#btn-verse-audio'),
-        width: document.documentElement.scrollWidth }
-    })
-    assert.ok(layout.body.bottom <= layout.audio.top, `${state}: controls are below text`)
-    assert.ok(layout.speed.right <= layout.button.left, `${state}: play button is to the right`)
-    assert.ok(layout.button.right <= 320 && layout.width <= 320, `${state}: controls fit screen`)
+  for (const width of [320, 375, 768, 1440]) {
+    await page.setViewportSize({ width, height: 667 })
+    for (const state of ['idle', 'playing', 'paused']) {
+      if (state !== 'idle') await button.click()
+      const layout = await page.evaluate(() => {
+        const box = (selector) => {
+          const r = document.querySelector(selector).getBoundingClientRect()
+          return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }
+        }
+        return { body: box('#verse-body'), audio: box('#verse-audio'),
+          speed: box('.verse-audio-speed'), button: box('#btn-verse-audio'),
+          width: document.documentElement.scrollWidth }
+      })
+      assert.ok(layout.body.bottom <= layout.audio.top, `${width}px ${state}: controls are below text`)
+      assert.ok(Math.abs((layout.speed.left + layout.speed.right) / 2 - width / 2) < 1,
+        `${width}px ${state}: speed is centered on screen`)
+      assert.ok(layout.speed.right <= layout.button.left, `${width}px ${state}: play is to the right`)
+      assert.ok(layout.button.right <= width && layout.width <= width, `${width}px ${state}: controls fit screen`)
+      assert.ok(Math.abs(layout.speed.top - layout.button.top) < 2, `${width}px ${state}: controls share a row`)
+    }
+    await page.evaluate(() => window.speechTest.utterances.at(-1).onend())
   }
 })
 
