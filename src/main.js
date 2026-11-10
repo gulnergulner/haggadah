@@ -336,8 +336,8 @@ function fontFitKeys() {
   }
 }
 
-function rememberFontSize(key, size, manual = false) {
-  lastFontFit = { key, size, ...(manual && { manual: true }) }
+function rememberFontSize(key, size, manual = false, allowOverflow = false) {
+  lastFontFit = { key, size, manual, ...(manual && { allowOverflow }) }
   try { localStorage.setItem(FONT_FIT_KEY, JSON.stringify(lastFontFit)) } catch { /* 저장할 수 없어도 화면은 유지 */ }
 }
 
@@ -350,28 +350,36 @@ function applyFontSize({ preferredSize, keepManual = false } = {}) {
   const fit = fitFontSize()
   if (fit === null) return
   const { key, previousKey } = fontFitKeys()
-  let manual = keepManual
-  let size = Math.max(MIN_FONT, Math.min(manual ? MAX_MANUAL_FONT : fit, preferredSize ?? fit + fontDelta))
-  if (preferredSize === undefined && (lastFontFit?.key === key || lastFontFit?.key === previousKey) && Number.isFinite(lastFontFit.size)
+  let manual = preferredSize !== undefined
+  let allowOverflow = manual && keepManual
+  let size = Math.max(MIN_FONT, Math.min(allowOverflow ? MAX_MANUAL_FONT : fit, preferredSize ?? fit + fontDelta))
+  let rememberedSize = size
+  const savedManual = lastFontFit?.manual === true
+    || (lastFontFit?.manual === undefined && fontDelta < 0)
+  if (preferredSize === undefined && savedManual
+    && (lastFontFit?.key === key || lastFontFit?.key === previousKey) && Number.isFinite(lastFontFit.size)
     && lastFontFit.size >= MIN_FONT && lastFontFit.size <= MAX_MANUAL_FONT) {
-    manual = lastFontFit.manual === true
-    size = Math.min(manual ? MAX_MANUAL_FONT : fit, lastFontFit.size)
+    manual = true
+    // 이전 버전의 manual 값은 두 손가락 확대에만 사용됐다.
+    allowOverflow = lastFontFit.manual === true && lastFontFit.allowOverflow !== false
+    size = Math.min(allowOverflow ? MAX_MANUAL_FONT : fit, lastFontFit.size)
+    rememberedSize = lastFontFit.size
   }
   verseCard.style.fontSize = `${size}px`
-  rememberFontSize(key, size, manual)
+  rememberFontSize(key, manual ? rememberedSize : size, manual, allowOverflow)
   verseSpeech.refreshHighlight()
 }
 
 els.fontIncrease.addEventListener('click', () => {
   const currentSize = parseFloat(getComputedStyle(verseCard).fontSize)
-  const keepManual = lastFontFit?.manual === true
+  const keepManual = lastFontFit?.manual === true && lastFontFit.allowOverflow !== false
   fontDelta = Math.min(0, fontDelta + 4)
   localStorage.setItem('verseFontDelta', fontDelta)
   applyFontSize({ preferredSize: currentSize + 4, keepManual })
 })
 els.fontDecrease.addEventListener('click', () => {
   const currentSize = parseFloat(getComputedStyle(verseCard).fontSize)
-  const keepManual = lastFontFit?.manual === true
+  const keepManual = lastFontFit?.manual === true && lastFontFit.allowOverflow !== false
   fontDelta = Math.max(-(MAX_FONT - MIN_FONT), fontDelta - 4)
   localStorage.setItem('verseFontDelta', fontDelta)
   applyFontSize({ preferredSize: currentSize - 4, keepManual })
@@ -391,8 +399,10 @@ function finishPinch() {
   if (key !== gesture.key) {
     applyFontSize()
   } else if (gesture.changed) {
-    rememberFontSize(key, gesture.size, true)
+    rememberFontSize(key, gesture.size, true, true)
     verseSpeech.refreshHighlight()
+  } else {
+    applyFontSize()
   }
 }
 
@@ -432,6 +442,17 @@ window.addEventListener('pagehide', finishPinch)
 applyFontSize()
 window.addEventListener('resize', applyFontSize)
 document.fonts?.ready.then(applyFontSize) // 세리프 폰트 로드 후 재계산
+if (typeof ResizeObserver === 'function') {
+  let lastWidth = 0
+  let lastHeight = 0
+  new ResizeObserver(([entry]) => {
+    const { width, height } = entry.contentRect
+    if (width === lastWidth && height === lastHeight) return
+    lastWidth = width
+    lastHeight = height
+    applyFontSize()
+  }).observe(verseMain)
+}
 
 // ---------- 카운터 + 진행바 ----------
 function renderCount(n) {

@@ -30,10 +30,13 @@ async function setup(t, { supported = true, english = true, longEnglish = false,
             : multiline ? 'Remember this day.\nAlways keep it.' : 'Remember this day.',
         }, fetchedAt: Date.now(),
       }))
-      if (legacyFit) localStorage.setItem('haggadah.verseFontFit.v1', JSON.stringify({
-        key: JSON.stringify(['2026-09-06', 'en', '📖 Deuteronomy 16:3', 'Remember this day.Always keep it.', 0]),
-        size: 14,
-      }))
+      if (legacyFit) {
+        localStorage.setItem('verseFontDelta', '-4')
+        localStorage.setItem('haggadah.verseFontFit.v1', JSON.stringify({
+          key: JSON.stringify(['2026-09-06', 'en', '📖 Deuteronomy 16:3', 'Remember this day.Always keep it.', -4]),
+          size: 14,
+        }))
+      }
       sessionStorage.setItem('speech-test-initialized', '1')
     }
     window.speechTest = { utterances: [], canceled: 0, paused: 0, resumed: 0 }
