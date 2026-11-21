@@ -293,7 +293,7 @@ els.btnLang.addEventListener('click', () => {
 })
 
 // ---------- 글자 크기: 화면에 잘리지 않는 최대 크기로 자동 맞춤 ----------
-// 사용자는 -/+ 버튼으로 자동 크기에서 줄이는 방향의 보정만 저장한다.
+// 사용자가 조절한 크기는 해당 말씀에만 적용하고 새 말씀은 자동 맞춤으로 시작한다.
 const MIN_FONT = 12
 const MAX_FONT = 44
 const MAX_MANUAL_FONT = 80
@@ -301,6 +301,8 @@ const FONT_FIT_KEY = 'haggadah.verseFontFit.v1'
 let fontDelta = parseInt(localStorage.getItem('verseFontDelta'), 10) || 0
 let lastFontFit = null
 try { lastFontFit = JSON.parse(localStorage.getItem(FONT_FIT_KEY)) } catch { /* 저장값이 없으면 자동 맞춤 */ }
+let fontDeltaVerseId = null
+try { fontDeltaVerseId = JSON.parse(lastFontFit?.key)[0] } catch { /* 이전 말씀을 알 수 없으면 자동 맞춤 */ }
 
 const verseMain = document.querySelector('.verse-main')
 const verseCard = document.querySelector('.verse-card')
@@ -346,6 +348,11 @@ function applyFontSize({ preferredSize, keepManual = false } = {}) {
   if (verseLoading || !verse) {
     verseCard.style.fontSize = '20px'
     return
+  }
+  if (fontDeltaVerseId !== verse.id) {
+    fontDelta = 0
+    localStorage.setItem('verseFontDelta', '0')
+    fontDeltaVerseId = verse.id
   }
   const fit = fitFontSize()
   if (fit === null) return

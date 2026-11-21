@@ -11,33 +11,34 @@ let browser
 before(async () => { browser = await chromium.launch({ channel: 'msedge', headless: true }) })
 after(async () => { await browser?.close() })
 
-async function setup(t, { lang = 'ko', viewport = { width: 375, height: 812 }, saved = null, uncached = false } = {}) {
+async function setup(t, { lang = 'ko', viewport = { width: 375, height: 812 }, saved = null, uncached = false, savedVerseId = VERSE.id, fontDelta = 0, verse = VERSE } = {}) {
   const context = await browser.newContext({ viewport, timezoneId: 'Asia/Seoul', isMobile: true, hasTouch: true })
   t.after(() => context.close())
   const page = await context.newPage()
   await page.clock.install({ time: new Date('2026-09-06T08:00:00+09:00') })
   await page.route('**/api/me', (route) => route.fulfill({ json: { loggedIn: false } }))
   if (uncached) await page.route('**/rest/v1/haggadot**', (route) => route.fulfill({ json: [{
-    id: VERSE.id, reference: VERSE.reference, reference_en: VERSE.referenceEn,
-    body_ko: VERSE.bodyKo, body_en: VERSE.bodyEn, updated_at: '2026-09-06T00:00:00Z',
+    id: verse.id, reference: verse.reference, reference_en: verse.referenceEn,
+    body_ko: verse.bodyKo, body_en: verse.bodyEn, updated_at: '2026-09-06T00:00:00Z',
   }] }))
-  await page.addInitScript(({ lang, saved, uncached, verse }) => {
+  await page.addInitScript(({ lang, saved, uncached, verse, savedVerseId, fontDelta }) => {
     if (sessionStorage.getItem('font-fit-test-initialized')) return
     localStorage.clear()
     localStorage.setItem('haggadah.v1', JSON.stringify({ lang, counts: {} }))
+    localStorage.setItem('verseFontDelta', String(fontDelta))
     if (!uncached) localStorage.setItem('haggadah.verseCache', JSON.stringify({ data: verse }))
     if (saved) {
       const reference = lang === 'ko' ? verse.reference : verse.referenceEn
       const body = lang === 'ko' ? verse.bodyKo : verse.bodyEn
       localStorage.setItem('haggadah.verseFontFit.v1', JSON.stringify({
-        key: JSON.stringify([verse.id, lang, `📖 ${reference}`, body, 0]), size: 12, ...saved,
+        key: JSON.stringify([savedVerseId, lang, `📖 ${reference}`, body, fontDelta]), size: 12, ...saved,
       }))
     }
     sessionStorage.setItem('font-fit-test-initialized', '1')
-  }, { lang, saved, uncached, verse: VERSE })
+  }, { lang, saved, uncached, verse, savedVerseId, fontDelta })
   await page.goto(BASE)
   await page.waitForFunction((text) => document.querySelector('#verse-body').textContent === text,
-    lang === 'ko' ? VERSE.bodyKo : VERSE.bodyEn)
+    lang === 'ko' ? verse.bodyKo : verse.bodyEn)
   await page.evaluate(() => document.fonts.ready)
   await page.clock.runFor(100)
   return page
@@ -46,6 +47,18 @@ async function setup(t, { lang = 'ko', viewport = { width: 375, height: 812 }, s
 const size = (page) => page.locator('#verse-body').evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
 
 for (const lang of ['ko', 'en']) {
+  for (const repeat of [1, 4]) {
+    test(`${lang}: a new week's ${repeat === 1 ? 'short' : 'long'} verse resets the previous font adjustment`, async (t) => {
+      const verse = { ...VERSE, bodyKo: VERSE.bodyKo.repeat(repeat), bodyEn: VERSE.bodyEn.repeat(repeat) }
+      const automatic = await setup(t, { lang, uncached: true, verse })
+      const expected = await size(automatic)
+      const page = await setup(t, { lang, uncached: true, verse, fontDelta: -24,
+        savedVerseId: '2026-08-30', saved: { manual: true, size: 12, allowOverflow: false } })
+      assert.equal(await size(page), expected, 'new verse uses its own largest fitting size')
+      assert.equal(await page.evaluate(() => localStorage.getItem('verseFontDelta')), '0')
+      assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('haggadah.verseFontFit.v1')).manual), false)
+    })
+  }
   test(`${lang}: the first network load fits the verse to the screen`, async (t) => {
     const page = await setup(t, { lang, uncached: true })
     assert.ok(await size(page) > 20, 'the loading placeholder size does not remain after the verse arrives')
