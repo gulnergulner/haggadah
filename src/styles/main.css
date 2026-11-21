@@ -886,9 +886,9 @@ body {
 .journey-services { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--card-line); text-align: left; }
 .services-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .services-heading h3 { font-size: 15px; }
-.services-heading a, .journey-services summary { color: var(--badge-text); font-size: 13px; }
-.journey-services summary { cursor: pointer; padding: 12px 2px; }
-.journey-services details .stats-crosslink:first-of-type { margin-top: 0; }
+#btn-more-services, .services-all { color: var(--badge-text); font-size: 13px; padding: 8px 2px; }
+.services-all { display: inline-block; margin-top: 4px; }
+#more-services .stats-crosslink:first-child { margin-top: 8px; }
 
 .stats-crosslink {
   display: flex;

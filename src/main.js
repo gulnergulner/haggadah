@@ -634,6 +634,13 @@ function openStats() {
   els.statsOverlay.hidden = false
 }
 
+$('btn-more-services').addEventListener('click', ({ currentTarget }) => {
+  const more = $('more-services')
+  more.hidden = !more.hidden
+  currentTarget.setAttribute('aria-expanded', String(!more.hidden))
+  currentTarget.textContent = more.hidden ? '더 보기' : '접기'
+})
+
 els.btnStats.addEventListener('click', openStats)
 els.badge.addEventListener('click', openStats)
 $('btn-stats-close').addEventListener('click', () => { els.statsOverlay.hidden = true })
