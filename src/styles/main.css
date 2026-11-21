@@ -1133,8 +1133,8 @@ body {
   --green: #286045; --green-deep: #194a32; --share-bg: #d6dda0;
 }
 :root[data-theme="aqua"] {
-  --aqua-gloss: linear-gradient(to bottom, rgb(255 255 255 / 60%), rgb(255 255 255 / 18%) 46%, transparent 50%),
-    radial-gradient(ellipse at 50% 120%, rgb(255 255 255 / 48%), transparent 65%);
+  --aqua-gloss: radial-gradient(ellipse 85% 105% at 50% -18%, rgb(255 255 255 / 58%), rgb(255 255 255 / 16%) 55%, transparent),
+    radial-gradient(ellipse 70% 80% at 50% 125%, rgb(255 255 255 / 36%), transparent);
   --aqua-rim: inset 0 1px 1px white, inset 0 -1px 2px rgb(25 34 54 / 28%), 0 2px 3px rgb(25 34 54 / 18%);
 }
 [data-theme="aqua"] :is(.top, .dock, .calendar-dialog, .done-card) {
