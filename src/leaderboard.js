@@ -1,14 +1,26 @@
+import { createElement, Trophy } from 'lucide'
 import * as sync from './sync.js'
 
 const $ = (id) => document.getElementById(id)
 let requestId = 0
 
+function rankLabel(position) {
+  const label = document.createElement('span')
+  label.textContent = `${position}위`
+  if (position >= 1 && position <= 3) {
+    label.prepend(createElement(Trophy, {
+      width: 16, height: 16, 'aria-hidden': 'true',
+      class: `rank-trophy place-${position}`,
+    }))
+  }
+  return label
+}
+
 function rankingRow(entry) {
   const row = document.createElement('li')
   row.className = `leaderboard-row${entry.isMe ? ' is-me' : ''}`
-  const rank = document.createElement('span')
+  const rank = rankLabel(entry.rank)
   rank.className = 'leaderboard-rank'
-  rank.textContent = `${entry.rank}위`
   const name = document.createElement('span')
   name.className = 'leaderboard-name'
   name.textContent = `${entry.nickname}${entry.isMe ? ' (나)' : ''}`
@@ -44,7 +56,7 @@ async function loadRanking() {
     list.replaceChildren(...data.entries.map(rankingRow))
     if (data.myEntry) {
       const mine = $('leaderboard-mine')
-      mine.textContent = `내 순위 ${data.myEntry.rank}위 · ${data.myEntry.total.toLocaleString()}회`
+      mine.replaceChildren('내 순위 ', rankLabel(data.myEntry.rank), ` · ${data.myEntry.total.toLocaleString()}회`)
       mine.hidden = false
     } else if (sync.isLoggedIn()) {
       status.textContent = '읊조림 기록을 저장하면 랭킹에 참여할 수 있어요.'

@@ -100,6 +100,8 @@ test('guest ranking and mobile layout', async (t) => {
   await s.open()
   await s.ready()
   assert.deepEqual(await s.page.locator('.leaderboard-rank').allTextContents(), ['1위', '1위', '3위'])
+  assert.equal(await s.page.locator('.rank-trophy.place-1').count(), 2)
+  assert.equal(await s.page.locator('.rank-trophy.place-3').count(), 1)
   assert.equal(await s.page.locator('#leaderboard-list img').count(), 0)
   assert.match(await s.page.locator('.leaderboard-name').first().innerText(), /<img/)
   assert.ok(await s.page.locator('#btn-leaderboard-login').isVisible())

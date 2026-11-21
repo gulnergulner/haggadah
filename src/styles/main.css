@@ -984,7 +984,7 @@ body {
 .leaderboard-list { list-style: none; text-align: left; }
 .leaderboard-row {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   padding: 12px 8px;
@@ -993,6 +993,10 @@ body {
 }
 .leaderboard-row.is-me { background: var(--badge-bg); border-radius: 8px; }
 .leaderboard-rank { color: var(--badge-text); font-weight: 700; }
+.rank-trophy { vertical-align: -2px; margin-right: 3px; fill: currentColor; }
+.rank-trophy.place-1 { color: #b48922; }
+.rank-trophy.place-2 { color: #798698; }
+.rank-trophy.place-3 { color: #a96744; }
 .leaderboard-name { overflow-wrap: anywhere; }
 .leaderboard-row strong { font-variant-numeric: tabular-nums; font-size: 13px; }
 .leaderboard-note { margin-top: 14px; font-size: 12px; }
