@@ -984,7 +984,7 @@ body {
 .leaderboard-list { list-style: none; text-align: left; }
 .leaderboard-row {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto;
+  grid-template-columns: 66px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   padding: 12px 8px;
@@ -993,8 +993,10 @@ body {
 }
 .leaderboard-row.is-me { background: var(--badge-bg); border-radius: 8px; }
 .leaderboard-rank { color: var(--badge-text); font-weight: 700; }
-.rank-trophy { vertical-align: -2px; margin-right: 3px; fill: currentColor; }
-.rank-trophy.place-1 { color: #b48922; }
+.rank-label { display: inline-grid; grid-template-columns: 26px auto; gap: 5px; align-items: center; vertical-align: middle; }
+.rank-number { grid-column: 2; grid-row: 1; white-space: nowrap; }
+.rank-trophy { grid-column: 1; grid-row: 1; width: 26px; height: 26px; filter: drop-shadow(0 1px 1px #34281138); }
+.rank-trophy.place-1 { color: #d59a20; }
 .rank-trophy.place-2 { color: #798698; }
 .rank-trophy.place-3 { color: #a96744; }
 .leaderboard-name { overflow-wrap: anywhere; }

@@ -1,4 +1,3 @@
-import { createElement, Trophy } from 'lucide'
 import * as sync from './sync.js'
 
 const $ = (id) => document.getElementById(id)
@@ -6,12 +5,20 @@ let requestId = 0
 
 function rankLabel(position) {
   const label = document.createElement('span')
-  label.textContent = `${position}위`
+  label.className = 'rank-label'
+  const number = document.createElement('span')
+  number.className = 'rank-number'
+  number.textContent = `${position}위`
+  label.append(number)
   if (position >= 1 && position <= 3) {
-    label.prepend(createElement(Trophy, {
-      width: 16, height: 16, 'aria-hidden': 'true',
-      class: `rank-trophy place-${position}`,
-    }))
+    const svgNS = 'http://www.w3.org/2000/svg'
+    const trophy = document.createElementNS(svgNS, 'svg')
+    trophy.setAttribute('class', `rank-trophy place-${position}`)
+    trophy.setAttribute('aria-hidden', 'true')
+    const cup = document.createElementNS(svgNS, 'use')
+    cup.setAttribute('href', '#podium-cup')
+    trophy.append(cup)
+    label.prepend(trophy)
   }
   return label
 }
@@ -20,7 +27,7 @@ function rankingRow(entry) {
   const row = document.createElement('li')
   row.className = `leaderboard-row${entry.isMe ? ' is-me' : ''}`
   const rank = rankLabel(entry.rank)
-  rank.className = 'leaderboard-rank'
+  rank.classList.add('leaderboard-rank')
   const name = document.createElement('span')
   name.className = 'leaderboard-name'
   name.textContent = `${entry.nickname}${entry.isMe ? ' (나)' : ''}`

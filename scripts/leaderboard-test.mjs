@@ -96,10 +96,11 @@ async function setup(t, { loggedIn = false } = {}) {
 
 test('guest ranking and mobile layout', async (t) => {
   const s = await setup(t)
+  s.data.entries.push({ rank: 4, nickname: '네 번째', total: 800 })
   assert.equal(s.requests, 0)
   await s.open()
   await s.ready()
-  assert.deepEqual(await s.page.locator('.leaderboard-rank').allTextContents(), ['1위', '1위', '3위'])
+  assert.deepEqual(await s.page.locator('.leaderboard-rank').allTextContents(), ['1위', '1위', '3위', '4위'])
   assert.equal(await s.page.locator('.rank-trophy.place-1').count(), 2)
   assert.equal(await s.page.locator('.rank-trophy.place-3').count(), 1)
   assert.equal(await s.page.locator('#leaderboard-list img').count(), 0)
@@ -108,6 +109,8 @@ test('guest ranking and mobile layout', async (t) => {
   assert.ok(await s.page.locator('#leaderboard-mine').isHidden())
   for (const width of [320, 375, 768]) {
     await s.page.setViewportSize({ width, height: 667 })
+    const starts = await s.page.locator('.leaderboard-row .rank-number').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().left))
+    assert.equal(new Set(starts).size, 1)
     assert.ok(await s.page.locator('.leaderboard-card').evaluate((el) => el.scrollWidth <= el.clientWidth))
   }
   await s.page.setViewportSize({ width: 375, height: 667 })
@@ -125,7 +128,7 @@ test('member sees own rank outside top 50 and flushes saved counts before readin
   const writes = s.writes
   await s.open()
   await s.ready()
-  assert.match(await s.page.locator('#leaderboard-mine').innerText(), /65위.*120회/)
+  assert.match(await s.page.locator('#leaderboard-mine').innerText(), /65위\s*·\s*120회/)
   assert.ok(s.writes > writes)
   assert.ok(await s.page.locator('#btn-leaderboard-login').isHidden())
   assert.deepEqual(s.errors, [])

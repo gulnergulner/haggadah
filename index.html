@@ -22,6 +22,24 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet" />
 </head>
 <body>
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute">
+    <defs>
+      <linearGradient id="cup-polish" x2="1" y2=".25" gradientUnits="objectBoundingBox">
+        <stop stop-color="#281803" stop-opacity=".32"/>
+        <stop offset=".28" stop-color="white" stop-opacity=".82"/>
+        <stop offset=".54" stop-color="white" stop-opacity=".08"/>
+        <stop offset="1" stop-color="#381907" stop-opacity=".35"/>
+      </linearGradient>
+      <symbol fill="currentColor" id="podium-cup" viewBox="0 0 32 32">
+        <path d="M8 7H3q0 9 9 10m12-10h5q0 9-9 10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+        <path fill="inherit" id="cup-shape" d="M7 5h18l-1.4 8.5c-.7 4-3.4 6.8-6.1 7.5v3.5l4 1.8v2.2h-11v-2.2l4-1.8V21c-3-.8-5.5-3.5-6.1-7.5Z"/>
+        <use href="#cup-shape" fill="url(#cup-polish)"/>
+        <path d="m16 8 1.35 2.8 3.1.45-2.25 2.18.53 3.08L16 15.05l-2.73 1.46.53-3.08-2.25-2.18 3.1-.45Z" fill="#fff8dd"/>
+        <path d="M9 28h14v2H9z" fill="#514450"/>
+        <path d="m27 0 .9 2.4L30.5 3l-2.6.9L27 6.4l-.8-2.5-2.5-.9 2.5-.6Z" fill="currentColor"/>
+      </symbol>
+    </defs>
+  </svg>
   <!-- 날짜 + 칭호 + 글자 크기 조절 -->
   <header class="top">
     <div class="sync-controls">
