@@ -882,7 +882,14 @@ body {
   padding: 4px;
 }
 
-/* ---------- 상황판: 하루핑 바로가기 ---------- */
+/* ---------- 나의 말씀 여정: GodAgent 서비스 ---------- */
+.journey-services { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--card-line); text-align: left; }
+.services-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.services-heading h3 { font-size: 15px; }
+.services-heading a, .journey-services summary { color: var(--badge-text); font-size: 13px; }
+.journey-services summary { cursor: pointer; padding: 12px 2px; }
+.journey-services details .stats-crosslink:first-of-type { margin-top: 0; }
+
 .stats-crosslink {
   display: flex;
   align-items: center;
