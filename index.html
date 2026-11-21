@@ -7,9 +7,10 @@
   <meta name="theme-color" content="#f6f7f9" />
   <script>
     try {
-      if (localStorage.getItem('haggadah.theme') === 'modern') {
-        document.documentElement.dataset.theme = 'modern'
-        document.querySelector('meta[name="theme-color"]').content = '#faf7f2'
+      const theme = localStorage.getItem('haggadah.theme')
+      if (theme === 'modern' || theme === 'liquid-glass') {
+        document.documentElement.dataset.theme = theme
+        document.querySelector('meta[name="theme-color"]').content = theme === 'modern' ? '#faf7f2' : '#eaf2fa'
       }
     } catch { /* Use the original theme when storage is unavailable. */ }
   </script>
@@ -130,6 +131,7 @@
         <select id="theme-select">
           <option value="original">오리지널</option>
           <option value="modern">모던</option>
+          <option value="liquid-glass">리퀴드 글래스</option>
         </select>
       </label>
 

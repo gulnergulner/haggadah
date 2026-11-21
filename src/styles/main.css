@@ -1097,3 +1097,49 @@ body {
   border-color: #bad8d2;
 }
 [data-theme="modern"] .verse-audio-btn:hover:not(:disabled) { background: #cce5df; }
+
+:root[data-theme="liquid-glass"] {
+  --page-bg: #eaf2fa;
+  --card-bg: #f1f7ff;
+  --card-line: #c3d2e1;
+  --text: #192e45;
+  --text-soft: #465b72;
+  --badge-bg: #dbe8fb;
+  --badge-text: #354f82;
+  --green: #236b87;
+  --green-deep: #174e70;
+  --glass-panel: rgb(245 250 255 / 90%);
+  --glass-edge: inset 0 1px 1px #fff, inset 0 -1px 1px rgb(55 84 119 / 16%), 0 4px 14px rgb(48 75 108 / 12%);
+}
+[data-theme="liquid-glass"] body {
+  background:
+    radial-gradient(ellipse at 0% 10%, #c3e5f2, transparent 52%),
+    radial-gradient(ellipse at 100% 45%, #e0d6f5, transparent 50%),
+    radial-gradient(ellipse at 15% 100%, #bfdfdc, transparent 48%),
+    var(--page-bg);
+}
+[data-theme="liquid-glass"] :is(.date-navigation, .dock, .done-card, .calendar-dialog, .login-progress-card) {
+  background: linear-gradient(145deg, rgb(255 255 255 / 30%), transparent 60%), var(--glass-panel);
+  border-color: rgb(255 255 255 / 85%);
+  box-shadow: var(--glass-edge);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  [data-theme="liquid-glass"] :is(.date-navigation, .dock, .done-card, .calendar-dialog, .login-progress-card) {
+    --glass-panel: rgb(242 249 255 / 67%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(20px) saturate(140%);
+  }
+}
+[data-theme="liquid-glass"] :is(.btn, .font-size-btn, .verse-audio-btn, .verse-audio-speed) {
+  color: var(--glass-ink, var(--text));
+  background: linear-gradient(155deg, rgb(255 255 255 / 36%), transparent 55%), var(--glass-tint, #e2eff8);
+  box-shadow: var(--glass-edge);
+}
+[data-theme="liquid-glass"] .btn-reset { --glass-tint: #f5d9df; }
+[data-theme="liquid-glass"] .btn-lang { --glass-tint: #c6dcfa; }
+[data-theme="liquid-glass"] :is(.btn-share, .done-sync-btn) { --glass-tint: #f3dfaf; }
+[data-theme="liquid-glass"] :is(.btn-increase, .done-btn) {
+  --glass-tint: #165775;
+  --glass-ink: white;
+}
+[data-theme="liquid-glass"] .btn:active { filter: brightness(.94); }

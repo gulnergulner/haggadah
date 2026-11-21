@@ -141,6 +141,7 @@ function renderVerse() {
   $('theme-label').textContent = ko ? '색상 테마' : 'Color theme'
   themeSelect.options[0].textContent = ko ? '오리지널' : 'Original'
   themeSelect.options[1].textContent = ko ? '모던' : 'Modern'
+  themeSelect.options[2].textContent = ko ? '리퀴드 글래스' : 'Liquid Glass'
   verseSpeech.update({
     visible: !ko,
     body: !verseLoading ? verse?.bodyEn : '',
