@@ -1,19 +1,22 @@
 /* 성도 화면 — 프레임(내부 스크롤) 없는 단일 문서 흐름 + 하단 고정 독 구조 */
 
 :root {
-  --page-bg: #f6f7f9;
-  --card-bg: #ffffff;
-  --card-line: #e7e9ee;
-  --text: #1f2430;
-  --text-soft: #6b7280;
-  --badge-bg: #eef2ff;
-  --badge-text: #4338ca;
-  --red: #ef4444;
-  --red-deep: #dc2626;
-  --blue: #3b82f6;
-  --blue-deep: #2563eb;
-  --green: #22c55e;
-  --green-deep: #16a34a;
+  --page-bg: #f7f5f0;
+  --card-bg: #fffefa;
+  --card-line: #e5e1d8;
+  --text: #302f2a;
+  --text-soft: #767369;
+  --badge-bg: #e9ede5;
+  --badge-text: #495d4e;
+  --green: #495d4e;
+  --green-deep: #394b3e;
+  --neutral-bg: #f0ede6;
+  --neutral-active: #e5e0d6;
+  --brass-bg: #ece3ce;
+  --brass-active: #dfd2b6;
+  --brass-text: #665334;
+  --gold: #a48a54;
+  --button-shadow: 0 2px 5px rgba(51, 46, 35, 0.05);
 }
 
 body {
@@ -92,7 +95,7 @@ body {
   border-radius: 12px;
   min-height: 44px;
 }
-#btn-calendar:hover:not(:disabled) { background: #f5f6fb; }
+#btn-calendar:hover:not(:disabled) { background: var(--neutral-bg); }
 #btn-calendar:focus-visible { outline: 2px solid var(--badge-text); }
 #btn-calendar:disabled { cursor: wait; }
 .date-eyebrow { font-size: 10px; font-weight: 500; color: var(--text-soft); letter-spacing: 0.04em; }
@@ -148,7 +151,7 @@ body {
 
 .font-size-btn:active {
   transform: scale(0.94);
-  background: #f1f3f6;
+  background: var(--neutral-bg);
 }
 
 /* ---------- 말씀 영역: 배경과 구분 없이, 화면에 꽉 차게 ---------- */
@@ -195,15 +198,15 @@ body {
   min-width: 0;
   max-width: 100%;
   padding: 7px 15px;
-  border: 1px solid #d8dcf5;
+  border: 1px solid var(--card-line);
   border-radius: 999px;
-  background: #f0f1ff;
+  background: var(--badge-bg);
   color: var(--badge-text);
   font-family: var(--sans);
   font-size: 14px;
   font-weight: 700;
 }
-.verse-audio-btn:hover:not(:disabled) { background: #e4e7ff; }
+.verse-audio-btn:hover:not(:disabled) { background: #dce3d7; }
 .verse-audio-btn:focus-visible { outline: 2px solid var(--badge-text); outline-offset: 2px; }
 .verse-audio-btn:disabled { opacity: 0.5; cursor: default; }
 .verse-spoken-overlay {
@@ -307,7 +310,7 @@ body {
 .calendar-topline, .calendar-month-nav, .calendar-month-nav > div, .calendar-summary { display: flex; align-items: center; justify-content: space-between; }
 .calendar-eyebrow { color: var(--badge-text); font-size: 12px; font-weight: 700; }
 .calendar-icon { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border-radius: 11px; color: var(--text-soft); flex-shrink: 0; }
-.calendar-icon:hover:not(:disabled) { background: #f3f4f8; }
+.calendar-icon:hover:not(:disabled) { background: var(--neutral-bg); }
 .calendar-dialog button:focus-visible { outline: 2px solid var(--badge-text); outline-offset: 2px; }
 .calendar-dialog button:disabled { opacity: 0.28; cursor: default; }
 .calendar-month-nav { margin-top: 12px; gap: 8px; }
@@ -329,15 +332,15 @@ body {
   font-variant-numeric: tabular-nums;
   transition: background 0.15s, border-color 0.15s;
 }
-.calendar-day:hover:not(:disabled) { background: #f1f2f7; }
-.calendar-day[aria-current="date"] { border-color: #cbd0df; font-weight: 750; }
-.calendar-day.is-achieved { background: #e8f5ef; color: #247b58; }
+.calendar-day:hover:not(:disabled) { background: var(--neutral-bg); }
+.calendar-day[aria-current="date"] { border-color: #c5ccbe; font-weight: 750; }
+.calendar-day.is-achieved { background: var(--badge-bg); color: var(--green-deep); }
 .calendar-day.is-achieved::after { content: ''; position: absolute; bottom: 5px; left: calc(50% - 2px); width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
-.calendar-day.is-selected, .calendar-day.is-selected:hover:not(:disabled) { background: var(--badge-text); color: white; border-color: var(--badge-text); box-shadow: 0 3px 8px #4338ca25; }
-.calendar-summary { margin-top: 22px; padding-top: 18px; border-top: 1px solid #eef0f4; font-size: 11px; color: var(--text-soft); gap: 8px; }
+.calendar-day.is-selected, .calendar-day.is-selected:hover:not(:disabled) { background: var(--badge-text); color: white; border-color: var(--badge-text); box-shadow: 0 3px 8px rgba(57, 75, 62, 0.14); }
+.calendar-summary { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--card-line); font-size: 11px; color: var(--text-soft); gap: 8px; }
 .calendar-summary > span { display: inline-flex; align-items: center; gap: 7px; }
-.calendar-summary i { width: 8px; height: 8px; border-radius: 50%; background: #54aa84; }
-#calendar-achieved { color: #247b58; font-weight: 650; }
+.calendar-summary i { width: 8px; height: 8px; border-radius: 50%; background: #7d917a; }
+#calendar-achieved { color: var(--green-deep); font-weight: 650; }
 .calendar-status { margin-top: 14px; font-size: 12px; line-height: 1.6; color: var(--badge-text); }
 .calendar-status:empty { display: none; }
 .calendar-note { margin-top: 14px; font-size: 10px; color: #9198a5; line-height: 1.6; }
@@ -410,7 +413,12 @@ body {
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.08s ease, box-shadow 0.15s ease;
+  transition: transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.btn:focus-visible, .sync-btn:focus-visible {
+  outline: 2px solid var(--badge-text);
+  outline-offset: 3px;
 }
 
 .btn:active {
@@ -418,23 +426,27 @@ body {
 }
 
 .btn-reset {
-  background: var(--red);
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+  background: var(--neutral-bg);
+  color: #655f55;
+  border: 1px solid var(--card-line);
+  box-shadow: var(--button-shadow);
 }
-.btn-reset:active { background: var(--red-deep); }
+.btn-reset:active { background: var(--neutral-active); }
 
 .btn-lang {
-  background: var(--blue);
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--card-line);
+  box-shadow: var(--button-shadow);
 }
-.btn-lang:active { background: var(--blue-deep); }
+.btn-lang:active { background: var(--neutral-active); }
 
 .btn-share {
-  background: #fee500;
-  color: #191919;
-  box-shadow: 0 4px 14px rgba(254, 229, 0, 0.3);
+  background: var(--brass-bg);
+  color: var(--brass-text);
+  box-shadow: var(--button-shadow);
 }
-.btn-share:active { background: #f2d900; }
+.btn-share:active { background: var(--brass-active); }
 .btn-share:disabled { opacity: 0.6; cursor: wait; }
 
 .btn-increase {
@@ -443,7 +455,7 @@ body {
   justify-content: center;
   gap: 5px;
   background: var(--green);
-  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35);
+  box-shadow: 0 4px 10px rgba(57, 75, 62, 0.16);
   font-size: 1.35rem;
   padding: 0.85rem 1rem;
 }
@@ -557,9 +569,9 @@ body {
 /* ---------- 배경색 전환 애니메이션 (100회 달성) ---------- */
 @keyframes backgroundFlash {
   0% { background-color: var(--page-bg); }
-  25% { background-color: lightblue; }
-  50% { background-color: lightgreen; }
-  75% { background-color: lightpink; }
+  25% { background-color: #ece8df; }
+  50% { background-color: #e5ecdf; }
+  75% { background-color: #eee6d8; }
   100% { background-color: var(--page-bg); }
 }
 
@@ -601,11 +613,11 @@ body {
 }
 
 .goal-progress.goal-done .goal-fill {
-  background: #f59e0b;
+  background: var(--gold);
 }
 
 .goal-progress.goal-done .goal-text {
-  color: #d97706;
+  color: #846d3e;
 }
 
 /* ---------- 토스트 (20/40/60/80회 피드백) ---------- */
@@ -687,7 +699,7 @@ body {
 .done-strong {
   font-size: 17px;
   font-weight: 700;
-  color: #d97706;
+  color: #846d3e;
 }
 
 .done-soft {
@@ -706,7 +718,7 @@ body {
   width: 100%;
   margin-top: 14px;
   background: var(--green);
-  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35);
+  box-shadow: 0 4px 10px rgba(57, 75, 62, 0.16);
   padding: 0.8rem 1rem;
   font-size: 1.1rem;
 }
@@ -738,8 +750,8 @@ body {
 .sync-btn.sync-on {
   filter: none;
   opacity: 1;
-  background: #fee500; /* 카카오 옐로 */
-  border-color: #f2d900;
+  background: var(--brass-bg); /* 따뜻한 브라스 톤 */
+  border-color: var(--brass-active);
 }
 
 .sync-btn:active {
@@ -749,9 +761,9 @@ body {
 .done-sync-btn {
   width: 100%;
   margin-top: 14px;
-  background: #fee500; /* 카카오 옐로 */
-  color: #191919;
-  box-shadow: 0 4px 14px rgba(254, 229, 0, 0.45);
+  background: var(--brass-bg); /* 따뜻한 브라스 톤 */
+  color: var(--brass-text);
+  box-shadow: var(--button-shadow);
   padding: 0.8rem 1rem;
   font-size: 1.05rem;
 }
@@ -1037,7 +1049,7 @@ body {
   width: 32px;
   height: 32px;
   border: 3px solid var(--card-line);
-  border-top-color: #d2ad00;
+  border-top-color: var(--gold);
   border-radius: 50%;
   animation: login-spin 0.8s linear infinite;
 }
