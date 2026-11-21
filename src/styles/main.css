@@ -1132,6 +1132,13 @@ body {
   --red: #8d564b; --red-deep: #75463d; --blue: #426d70; --blue-deep: #305258;
   --green: #286045; --green-deep: #194a32; --share-bg: #d6dda0;
 }
+:root[data-theme="aqua"] {
+  --page-bg: #e4f6f8; --card-bg: #f5fdff; --card-line: #afd6dd;
+  --text: #153944; --text-soft: #426672;
+  --badge-bg: #c9eef0; --badge-text: #076070;
+  --red: #985254; --red-deep: #784044; --blue: #24668a; --blue-deep: #164c6e;
+  --green: #007477; --green-deep: #00595f; --share-bg: #ade5dc;
+}
 :root[data-theme="midnight"] {
   color-scheme: dark;
   --page-bg: #141b2c; --card-bg: #202a40; --card-line: #41506b;
@@ -1140,7 +1147,7 @@ body {
   --red: #814853; --red-deep: #693741; --blue: #495d93; --blue-deep: #384977;
   --green: #386b70; --green-deep: #2e585e; --share-bg: #c6b687;
 }
-:is([data-theme="paper"], [data-theme="forest"], [data-theme="midnight"]) {
+:is([data-theme="paper"], [data-theme="forest"], [data-theme="aqua"], [data-theme="midnight"]) {
   & :is(.date-navigation, .dock) { background: var(--card-bg); }
   & :is(.btn-share, .done-sync-btn) { background: var(--share-bg); color: #28251e; }
   & .btn { box-shadow: 0 2px 8px rgb(0 0 0 / 12%); }
