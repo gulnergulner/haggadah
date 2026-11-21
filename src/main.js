@@ -52,6 +52,15 @@ const els = {
   statsOverlay: $('stats-overlay'),
 }
 
+const themeSelect = $('theme-select')
+themeSelect.value = document.documentElement.dataset.theme || 'original'
+themeSelect.addEventListener('change', () => {
+  document.documentElement.dataset.theme = themeSelect.value
+  document.querySelector('meta[name="theme-color"]').content =
+    getComputedStyle(document.documentElement).getPropertyValue('--page-bg').trim()
+  try { localStorage.setItem('haggadah.theme', themeSelect.value) } catch { /* 현재 화면에는 적용 */ }
+})
+
 const counter = createCounter()
 const verseSpeech = initVerseSpeech({
   container: $('verse-audio'),
@@ -129,6 +138,9 @@ function renderVerse() {
   renderDate()
   const lang = counter.getPref('lang')
   const ko = lang === 'ko'
+  $('theme-label').textContent = ko ? '색상 테마' : 'Color theme'
+  themeSelect.options[0].textContent = ko ? '오리지널' : 'Original'
+  themeSelect.options[1].textContent = ko ? '모던' : 'Modern'
   verseSpeech.update({
     visible: !ko,
     body: !verseLoading ? verse?.bodyEn : '',

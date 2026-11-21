@@ -1045,3 +1045,55 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .login-spinner { animation: none; }
 }
+
+.theme-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+.theme-setting select {
+  padding: 8px 12px;
+  border: 1px solid var(--card-line);
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--text);
+  font: inherit;
+}
+
+:root[data-theme="modern"] {
+  --page-bg: #faf7f2;
+  --card-bg: #fffdfa;
+  --card-line: #e6dfd5;
+  --text: #202f37;
+  --text-soft: #58676d;
+  --badge-bg: #dcefeb;
+  --badge-text: #17605e;
+  --red: #f8deda;
+  --red-deep: #f0c8c2;
+  --blue: #dce9fa;
+  --blue-deep: #c9dbf2;
+  --green: #136e68;
+  --green-deep: #0b5551;
+}
+[data-theme="modern"] .btn {
+  box-shadow: 0 2px 5px rgb(32 47 55 / 10%);
+  border-radius: 12px;
+}
+[data-theme="modern"] .btn-reset { color: #843b37; }
+[data-theme="modern"] .btn-lang { color: #284e7b; }
+[data-theme="modern"] :is(.btn-share, .done-sync-btn, .sync-on) {
+  background: #f4d68d;
+  color: #564019;
+  border-color: #dbbd78;
+}
+[data-theme="modern"] .btn-share:active { background: #e9c576; }
+[data-theme="modern"] .verse-audio-btn {
+  background: var(--badge-bg);
+  border-color: #bad8d2;
+}
+[data-theme="modern"] .verse-audio-btn:hover:not(:disabled) { background: #cce5df; }

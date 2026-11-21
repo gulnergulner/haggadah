@@ -5,6 +5,14 @@
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#f6f7f9" />
+  <script>
+    try {
+      if (localStorage.getItem('haggadah.theme') === 'modern') {
+        document.documentElement.dataset.theme = 'modern'
+        document.querySelector('meta[name="theme-color"]').content = '#faf7f2'
+      }
+    } catch { /* Use the original theme when storage is unavailable. */ }
+  </script>
   <meta name="description" content="매주 말씀을 읊조리며 횟수를 세는 하가다 페이지" />
   <title>새가나안교회 하가다</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -116,6 +124,14 @@
   <div id="stats-overlay" class="done-overlay" hidden>
     <div class="done-card stats-card">
       <h2>나의 말씀 여정</h2>
+
+      <label class="theme-setting">
+        <span id="theme-label">색상 테마</span>
+        <select id="theme-select">
+          <option value="original">오리지널</option>
+          <option value="modern">모던</option>
+        </select>
+      </label>
 
       <div class="stats-tree">
         <span id="st-tree-emoji" class="stats-tree-emoji"></span>
