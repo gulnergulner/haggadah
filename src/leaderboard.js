@@ -1,7 +1,43 @@
+import { createElement, ListOrdered } from 'lucide'
 import * as sync from './sync.js'
 
 const $ = (id) => document.getElementById(id)
 let requestId = 0
+
+function trophyIcon(position) {
+  const svgNS = 'http://www.w3.org/2000/svg'
+  const trophy = document.createElementNS(svgNS, 'svg')
+  trophy.setAttribute('class', `rank-trophy place-${position}`)
+  trophy.setAttribute('aria-hidden', 'true')
+  const cup = document.createElementNS(svgNS, 'use')
+  cup.setAttribute('href', '#podium-cup')
+  trophy.append(cup)
+  return trophy
+}
+
+function updateShortcut(rank) {
+  const button = $('btn-ranking-shortcut')
+  const awarded = sync.isLoggedIn() && rank >= 1 && rank <= 3
+  button.replaceChildren(awarded ? trophyIcon(rank) : createElement(ListOrdered, { width: 20, height: 20, 'aria-hidden': 'true' }))
+  button.title = awarded ? `랭킹 보기 · 내 순위 ${rank}위` : '랭킹 보기'
+  button.setAttribute('aria-label', button.title)
+}
+
+async function fetchRanking(signal) {
+  const res = await fetch('/api/leaderboard', { cache: 'no-store', signal })
+  if (!res.ok) throw new Error('조회 실패')
+  return res.json()
+}
+
+export async function refreshRankingShortcut() {
+  updateShortcut()
+  if (!sync.isLoggedIn()) return
+  const id = requestId
+  try {
+    const data = await fetchRanking(AbortSignal.timeout(8000))
+    if (id === requestId) updateShortcut(data.myEntry?.rank)
+  } catch { /* 조회에 실패해도 바로가기는 사용할 수 있다. */ }
+}
 
 function rankLabel(position) {
   const label = document.createElement('span')
@@ -11,14 +47,7 @@ function rankLabel(position) {
   number.textContent = `${position}위`
   label.append(number)
   if (position >= 1 && position <= 3) {
-    const svgNS = 'http://www.w3.org/2000/svg'
-    const trophy = document.createElementNS(svgNS, 'svg')
-    trophy.setAttribute('class', `rank-trophy place-${position}`)
-    trophy.setAttribute('aria-hidden', 'true')
-    const cup = document.createElementNS(svgNS, 'use')
-    cup.setAttribute('href', '#podium-cup')
-    trophy.append(cup)
-    label.prepend(trophy)
+    label.prepend(trophyIcon(position))
   }
   return label
 }
@@ -54,10 +83,9 @@ async function loadRanking() {
   try {
     if (sync.isLoggedIn()) await sync.flushPush({ signal: controller.signal })
     if (controller.signal.aborted) throw new Error('timeout')
-    const res = await fetch('/api/leaderboard', { cache: 'no-store', signal: controller.signal })
-    if (!res.ok) throw new Error('조회 실패')
-    const data = await res.json()
+    const data = await fetchRanking(controller.signal)
     if (id !== requestId) return
+    updateShortcut(data.myEntry?.rank)
     $('leaderboard-summary').textContent = `${data.participants.toLocaleString()}명 참여 · 상위 50명`
     status.textContent = data.entries.length ? '' : '아직 등록된 기록이 없어요. 첫 번째 여정을 시작해 보세요!'
     list.replaceChildren(...data.entries.map(rankingRow))
@@ -82,18 +110,23 @@ async function loadRanking() {
 
 export function initLeaderboard() {
   const overlay = $('leaderboard-overlay')
+  let opener
+  updateShortcut()
   const close = () => {
     overlay.hidden = true
     $('stats-overlay').inert = false
     ++requestId
-    $('btn-leaderboard').focus()
+    opener.focus()
   }
-  $('btn-leaderboard').addEventListener('click', () => {
+  const open = (event) => {
+    opener = event.currentTarget
     $('stats-overlay').inert = true
     overlay.hidden = false
     $('btn-leaderboard-close').focus()
     loadRanking()
-  })
+  }
+  $('btn-leaderboard').addEventListener('click', open)
+  $('btn-ranking-shortcut').addEventListener('click', open)
   $('btn-leaderboard-close').addEventListener('click', close)
   $('btn-leaderboard-refresh').addEventListener('click', loadRanking)
   $('btn-leaderboard-login').addEventListener('click', () => sync.login())

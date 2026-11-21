@@ -13,7 +13,7 @@ import {
 } from './journey.js'
 import * as sync from './sync.js'
 import * as wakelock from './wakelock.js'
-import { initLeaderboard } from './leaderboard.js'
+import { initLeaderboard, refreshRankingShortcut } from './leaderboard.js'
 import { initShare } from './share.js'
 import { initVerseSpeech } from './speech.js'
 
@@ -671,6 +671,7 @@ sync.initSync({
   counter,
   onChange: () => renderCount(counter.get()), // 서버 기록 병합 후 화면 갱신
   onUser: (user, justLoggedIn) => {
+    refreshRankingShortcut()
     renderSyncUI()
     renderCount(counter.get()) // 하루핑 XP 반영해 배지(합산 레벨) 갱신
     if (user && justLoggedIn) showToast('☁️ 카카오 연결됨 — 기록이 안전하게 저장돼요')

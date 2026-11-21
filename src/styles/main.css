@@ -260,7 +260,7 @@ body {
 @media (max-width: 760px) {
   #title-badge { display: none; }
   .top { gap: 4px; padding-inline: 10px; min-height: calc(58px + env(safe-area-inset-top)); }
-  .top .sync-controls { flex: 0 0 auto; margin-right: 32px; }
+  .top .sync-controls { flex: 0 0 auto; }
   .date-navigation { position: static; transform: none; flex: 1 1 auto; min-width: 0; gap: 1px; padding: 3px; }
   .date-navigation::before { flex-basis: 28px; }
   .date-title { flex: 1 1 auto; min-width: 0; }
@@ -277,7 +277,6 @@ body {
   .top { gap: 2px; padding-inline: 8px; }
   .verse-nav, .verse-refresh { width: 24px; flex-basis: 24px; }
   .top .sync-btn, .font-size-btn { width: 26px; }
-  .top .sync-controls { margin-right: 28px; }
   .date-navigation { gap: 0; }
   .date-navigation::before { flex-basis: 24px; }
   #date { font-size: 13px; }
@@ -713,6 +712,7 @@ body {
 
 /* ---------- 카카오 동기화 ---------- */
 .sync-controls {
+  gap: 2px;
   grid-column: 1;
   grid-row: 2;
   display: flex;
@@ -734,6 +734,9 @@ body {
   filter: grayscale(1);
   opacity: 0.6;
 }
+
+.sync-btn.ranking-shortcut { filter: none; opacity: 1; color: var(--badge-text); }
+.ranking-shortcut .rank-trophy { width: 23px; height: 23px; }
 
 .sync-btn.sync-on {
   filter: none;

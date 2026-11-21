@@ -156,3 +156,21 @@ test('failed query retries successfully, empty ranking is clear, reopening ignor
   await s.ready()
   assert.deepEqual(s.errors, [])
 })
+
+test('header shortcut shows the member trophy and opens ranking directly', async (t) => {
+  const s = await setup(t, { loggedIn: true })
+  const shortcut = s.page.locator('#btn-ranking-shortcut')
+  await s.page.locator('#btn-stats-close').click()
+  await shortcut.locator('.place-1').waitFor()
+  s.data.myEntry.rank = 3
+  await shortcut.click()
+  await s.ready()
+  assert.ok(await shortcut.locator('.place-3').count())
+  await s.page.locator('#btn-leaderboard-close').click()
+  assert.ok(await shortcut.evaluate(el => document.activeElement === el))
+  assert.ok(await s.page.locator('#stats-overlay').isHidden())
+  s.data.myEntry.rank = 4
+  await shortcut.click()
+  await s.ready()
+  assert.equal(await shortcut.locator('.rank-trophy').count(), 0)
+})
