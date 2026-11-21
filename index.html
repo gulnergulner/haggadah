@@ -205,7 +205,10 @@
 
   <div id="leaderboard-overlay" class="done-overlay" hidden>
     <section class="done-card leaderboard-card" role="dialog" aria-modal="true" aria-labelledby="leaderboard-title">
-      <h2 id="leaderboard-title">🏆 함께 읊조리기</h2>
+      <div class="leaderboard-heading">
+        <h2 id="leaderboard-title">🏆 함께 읊조리기</h2>
+        <button id="btn-leaderboard-dismiss" type="button" aria-label="랭킹 닫기">×</button>
+      </div>
       <p class="leaderboard-description">카카오로 연결한 성도들의 누적 읊조림 순위</p>
       <p id="leaderboard-summary" class="leaderboard-summary"></p>
       <div id="leaderboard-mine" class="leaderboard-mine" hidden></div>

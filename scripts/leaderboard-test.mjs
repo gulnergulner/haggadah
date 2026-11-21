@@ -166,7 +166,7 @@ test('header shortcut shows the member trophy and opens ranking directly', async
   await shortcut.click()
   await s.ready()
   assert.ok(await shortcut.locator('.place-3').count())
-  await s.page.locator('#btn-leaderboard-close').click()
+  await s.page.locator('#btn-leaderboard-dismiss').click()
   assert.ok(await shortcut.evaluate(el => document.activeElement === el))
   assert.ok(await s.page.locator('#stats-overlay').isHidden())
   s.data.myEntry.rank = 4

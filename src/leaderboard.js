@@ -122,11 +122,12 @@ export function initLeaderboard() {
     opener = event.currentTarget
     $('stats-overlay').inert = true
     overlay.hidden = false
-    $('btn-leaderboard-close').focus()
+    $('btn-leaderboard-dismiss').focus()
     loadRanking()
   }
   $('btn-leaderboard').addEventListener('click', open)
   $('btn-ranking-shortcut').addEventListener('click', open)
+  $('btn-leaderboard-dismiss').addEventListener('click', close)
   $('btn-leaderboard-close').addEventListener('click', close)
   $('btn-leaderboard-refresh').addEventListener('click', loadRanking)
   $('btn-leaderboard-login').addEventListener('click', () => sync.login())

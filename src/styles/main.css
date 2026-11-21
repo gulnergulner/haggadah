@@ -961,6 +961,15 @@ body {
   padding: 24px 18px;
 }
 
+.leaderboard-heading { position: relative; padding: 0 40px; }
+#btn-leaderboard-dismiss {
+  position: absolute; top: 50%; right: -8px; transform: translateY(-50%);
+  width: 44px; height: 44px; border-radius: 50%;
+  color: var(--text-soft); font-size: 26px; line-height: 1;
+}
+#btn-leaderboard-dismiss:hover { background: var(--badge-bg); }
+#btn-leaderboard-dismiss:focus-visible { outline: 2px solid var(--badge-text); }
+
 .leaderboard-description, .leaderboard-note, .leaderboard-summary {
   font-size: 13px;
   color: var(--text-soft);
