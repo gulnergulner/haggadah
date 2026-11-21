@@ -67,7 +67,7 @@ async function setup(t, { loggedIn = false } = {}) {
   }
   page.on('pageerror', (error) => s.errors.push(error.message))
   await page.route('**/api/me', (route) => route.fulfill({ json: {
-    loggedIn, nickname: '말씀새싹', haggadah: { total: 1000, counts: {} },
+    loggedIn, trophyCacheId: loggedIn ? 'test-account' : null, nickname: '말씀새싹', haggadah: { total: 1000, counts: {} },
   } }))
   await page.route('**/api/haggadah-state', (route) => {
     s.writes++
@@ -161,7 +161,9 @@ test('header shortcut shows the member trophy and opens ranking directly', async
   const s = await setup(t, { loggedIn: true })
   const shortcut = s.page.locator('#btn-ranking-shortcut')
   await s.page.locator('#btn-stats-close').click()
-  await shortcut.locator('.place-1').waitFor()
+  await s.page.locator('#btn-stats.sync-on').waitFor()
+  assert.equal(s.requests, 0)
+  assert.equal(await shortcut.locator('.rank-trophy').count(), 0)
   s.data.myEntry.rank = 3
   await shortcut.click()
   await s.ready()
@@ -169,8 +171,15 @@ test('header shortcut shows the member trophy and opens ranking directly', async
   await s.page.locator('#btn-leaderboard-dismiss').click()
   assert.ok(await shortcut.evaluate(el => document.activeElement === el))
   assert.ok(await s.page.locator('#stats-overlay').isHidden())
+  await s.page.reload()
+  await shortcut.locator('.place-3').waitFor()
+  assert.equal(s.requests, 1)
   s.data.myEntry.rank = 4
   await shortcut.click()
   await s.ready()
   assert.equal(await shortcut.locator('.rank-trophy').count(), 0)
+  await s.page.reload()
+  await s.page.locator('#btn-stats.sync-on').waitFor()
+  assert.equal(await shortcut.locator('.rank-trophy').count(), 0)
+  assert.equal(s.requests, 2)
 })

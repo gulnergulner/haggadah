@@ -13,7 +13,7 @@ import {
 } from './journey.js'
 import * as sync from './sync.js'
 import * as wakelock from './wakelock.js'
-import { initLeaderboard, refreshRankingShortcut } from './leaderboard.js'
+import { initLeaderboard, restoreRankingShortcut } from './leaderboard.js'
 import { initShare } from './share.js'
 import { initVerseSpeech } from './speech.js'
 
@@ -650,9 +650,11 @@ $('btn-stats-nickname').addEventListener('click', async () => {
   }
 })
 
-$('btn-stats-logout').addEventListener('click', () => {
+$('btn-stats-logout').addEventListener('click', async () => {
   if (confirm('카카오 연결을 해제할까요?\n(기록은 이 기기와 서버에 그대로 남습니다)')) {
-    sync.logout()
+    await sync.logout()
+    restoreRankingShortcut()
+    renderSyncUI()
     showToast('카카오 연결을 해제했어요')
     renderStats()
   }
@@ -670,8 +672,8 @@ renderSyncUI()
 sync.initSync({
   counter,
   onChange: () => renderCount(counter.get()), // 서버 기록 병합 후 화면 갱신
-  onUser: (user, justLoggedIn) => {
-    refreshRankingShortcut()
+  onUser: (user, justLoggedIn, cacheId) => {
+    restoreRankingShortcut(user && cacheId)
     renderSyncUI()
     renderCount(counter.get()) // 하루핑 XP 반영해 배지(합산 레벨) 갱신
     if (user && justLoggedIn) showToast('☁️ 카카오 연결됨 — 기록이 안전하게 저장돼요')

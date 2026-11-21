@@ -16,6 +16,10 @@ function sign(payload) {
   return createHmac('sha256', secret()).update(payload).digest('base64url')
 }
 
+export function trophyCacheId(uid) {
+  return sign(`haggadah:trophy:${uid}`)
+}
+
 export function createSessionToken(uid) {
   const exp = Math.floor(Date.now() / 1000) + MAX_AGE_SEC
   const payload = `${uid}.${exp}`

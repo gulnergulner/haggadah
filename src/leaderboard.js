@@ -29,14 +29,24 @@ async function fetchRanking(signal) {
   return res.json()
 }
 
-export async function refreshRankingShortcut() {
-  updateShortcut()
-  if (!sync.isLoggedIn()) return
-  const id = requestId
+let trophyCacheKey = null
+
+export function restoreRankingShortcut(cacheId) {
+  trophyCacheKey = cacheId ? `haggadah.trophy.${cacheId}` : null
+  let rank = null
   try {
-    const data = await fetchRanking(AbortSignal.timeout(8000))
-    if (id === requestId) updateShortcut(data.myEntry?.rank)
-  } catch { /* 조회에 실패해도 바로가기는 사용할 수 있다. */ }
+    if (trophyCacheKey) rank = Number(localStorage.getItem(trophyCacheKey))
+  } catch { /* 저장소를 사용할 수 없으면 기본 아이콘 표시 */ }
+  updateShortcut(rank)
+}
+
+function rememberRankingShortcut(rank) {
+  updateShortcut(rank)
+  if (!trophyCacheKey) return
+  try {
+    if ([1, 2, 3].includes(rank)) localStorage.setItem(trophyCacheKey, String(rank))
+    else localStorage.removeItem(trophyCacheKey)
+  } catch { /* 저장할 수 없어도 현재 순위는 표시 */ }
 }
 
 function rankLabel(position) {
@@ -85,7 +95,7 @@ async function loadRanking() {
     if (controller.signal.aborted) throw new Error('timeout')
     const data = await fetchRanking(controller.signal)
     if (id !== requestId) return
-    updateShortcut(data.myEntry?.rank)
+    rememberRankingShortcut(data.myEntry?.rank)
     $('leaderboard-summary').textContent = `${data.participants.toLocaleString()}명 참여 · 상위 50명`
     status.textContent = data.entries.length ? '' : '아직 등록된 기록이 없어요. 첫 번째 여정을 시작해 보세요!'
     list.replaceChildren(...data.entries.map(rankingRow))

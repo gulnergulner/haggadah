@@ -88,7 +88,7 @@ export function initSync(opts) {
       nickname = me.nickname ?? null
       harupingXp = loggedIn && typeof me.harupingXp === 'number' ? me.harupingXp : 0
       xpReady = true
-      opts.onUser?.(loggedIn, justLoggedIn)
+      opts.onUser?.(loggedIn, justLoggedIn, me.trophyCacheId)
       if (loggedIn) {
         const changed = counter.mergeRemote(me.haggadah || null)
         if (changed) onChange?.()
