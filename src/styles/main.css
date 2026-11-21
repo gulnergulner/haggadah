@@ -1117,3 +1117,39 @@ body {
   background-image: linear-gradient(155deg, rgb(255 255 255 / 28%), transparent 55%);
   box-shadow: var(--glass-edge);
 }
+
+:root[data-theme="paper"] {
+  --page-bg: #f6ecd9; --card-bg: #fff8e9; --card-line: #d9c6a5;
+  --text: #392c23; --text-soft: #705c49;
+  --badge-bg: #ecdcc1; --badge-text: #7b492c;
+  --red: #985143; --red-deep: #763b32; --blue: #756147; --blue-deep: #584932;
+  --green: #815333; --green-deep: #613e26; --share-bg: #efcf89;
+}
+:root[data-theme="forest"] {
+  --page-bg: #ecf3e8; --card-bg: #f8fcf3; --card-line: #c5d8bf;
+  --text: #20392d; --text-soft: #4e6756;
+  --badge-bg: #d6e8ce; --badge-text: #265e43;
+  --red: #8d564b; --red-deep: #75463d; --blue: #426d70; --blue-deep: #305258;
+  --green: #286045; --green-deep: #194a32; --share-bg: #d6dda0;
+}
+:root[data-theme="midnight"] {
+  color-scheme: dark;
+  --page-bg: #141b2c; --card-bg: #202a40; --card-line: #41506b;
+  --text: #eef1fa; --text-soft: #bdc9dc;
+  --badge-bg: #323d5d; --badge-text: #b9c9ff;
+  --red: #814853; --red-deep: #693741; --blue: #495d93; --blue-deep: #384977;
+  --green: #386b70; --green-deep: #2e585e; --share-bg: #c6b687;
+}
+:is([data-theme="paper"], [data-theme="forest"], [data-theme="midnight"]) {
+  & :is(.date-navigation, .dock) { background: var(--card-bg); }
+  & :is(.btn-share, .done-sync-btn) { background: var(--share-bg); color: #28251e; }
+  & .btn { box-shadow: 0 2px 8px rgb(0 0 0 / 12%); }
+  & .verse-audio-btn { background: var(--badge-bg); border-color: var(--card-line); }
+  & :is(.calendar-icon, .calendar-day, #btn-calendar, .verse-audio-btn):hover:not(:disabled):not(.is-selected) {
+    background: var(--badge-bg);
+  }
+}
+[data-theme="midnight"] .calendar-day.is-selected { color: var(--page-bg); }
+[data-theme="midnight"] #calendar-achieved { color: #9edeb8; }
+[data-theme="midnight"] .calendar-day.is-achieved:not(.is-selected) { background: #26473f; color: #b6e8c8; }
+[data-theme="midnight"] body.background-flash { animation: none; }

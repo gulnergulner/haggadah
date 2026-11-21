@@ -54,10 +54,14 @@ const els = {
 
 const themeSelect = $('theme-select')
 themeSelect.value = document.documentElement.dataset.theme
-themeSelect.addEventListener('change', () => {
-  document.documentElement.dataset.theme = themeSelect.value
+function updateBrowserThemeColor() {
   document.querySelector('meta[name="theme-color"]').content =
     getComputedStyle(document.documentElement).getPropertyValue('--page-bg').trim()
+}
+updateBrowserThemeColor()
+themeSelect.addEventListener('change', () => {
+  document.documentElement.dataset.theme = themeSelect.value
+  updateBrowserThemeColor()
   try { localStorage.setItem('haggadah.theme', themeSelect.value) } catch { /* 현재 화면에는 적용 */ }
 })
 
@@ -139,8 +143,7 @@ function renderVerse() {
   const lang = counter.getPref('lang')
   const ko = lang === 'ko'
   $('theme-label').textContent = ko ? '색상 테마' : 'Color theme'
-  themeSelect.options[0].textContent = ko ? '오리지널' : 'Original'
-  themeSelect.options[1].textContent = ko ? '리퀴드 글래스' : 'Liquid Glass'
+  for (const option of themeSelect.options) option.textContent = option.dataset[ko ? 'ko' : 'en']
   verseSpeech.update({
     visible: !ko,
     body: !verseLoading ? verse?.bodyEn : '',

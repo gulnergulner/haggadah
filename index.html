@@ -8,8 +8,9 @@
   <script>
     try {
       const theme = localStorage.getItem('haggadah.theme')
-      if (theme === 'original' || theme === 'modern') document.documentElement.dataset.theme = 'original'
+      if (['original', 'paper', 'forest', 'midnight'].includes(theme)) document.documentElement.dataset.theme = theme
       if (theme === 'modern') {
+        document.documentElement.dataset.theme = 'original'
         localStorage.setItem('haggadah.theme', 'original')
       }
     } catch { /* Keep the default theme when storage is unavailable. */ }
@@ -148,8 +149,11 @@
       <label class="theme-setting">
         <span id="theme-label">색상 테마</span>
         <select id="theme-select">
-          <option value="original">오리지널</option>
-          <option value="liquid-glass">리퀴드 글래스</option>
+          <option value="original" data-ko="오리지널" data-en="Original">오리지널</option>
+          <option value="liquid-glass" data-ko="리퀴드 글래스" data-en="Liquid Glass">리퀴드 글래스</option>
+          <option value="paper" data-ko="종이책" data-en="Paper">종이책</option>
+          <option value="forest" data-ko="숲빛" data-en="Forest">숲빛</option>
+          <option value="midnight" data-ko="한밤" data-en="Midnight">한밤</option>
         </select>
       </label>
 
