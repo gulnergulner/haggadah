@@ -1133,11 +1133,38 @@ body {
   --green: #286045; --green-deep: #194a32; --share-bg: #d6dda0;
 }
 :root[data-theme="aqua"] {
-  --page-bg: #e4f6f8; --card-bg: #f5fdff; --card-line: #afd6dd;
-  --text: #153944; --text-soft: #426672;
-  --badge-bg: #c9eef0; --badge-text: #076070;
-  --red: #985254; --red-deep: #784044; --blue: #24668a; --blue-deep: #164c6e;
-  --green: #007477; --green-deep: #00595f; --share-bg: #ade5dc;
+  --page-bg: #f6f8fb; --card-bg: #fbfcff; --card-line: #b4bfce;
+  --text: #18283a; --text-soft: #4a5869;
+  --badge-bg: #deedff; --badge-text: #164e89;
+  --green: #297ac4; --green-deep: #195793;
+  --aqua-silver: linear-gradient(#fafcff, #e5eaf2 48%, #cbd3df 51%, #f8fbff);
+  --aqua-blue: linear-gradient(#c4e8ff, #87c8ff 45%, #499eef 51%, #72c5ff 84%, #bbebff);
+  --aqua-rim: inset 0 1px 1px white, inset 0 -1px 2px #667c964d, 0 2px 3px #25395530;
+}
+[data-theme="aqua"] :is(.top, .dock, .calendar-dialog, .done-card) {
+  background: repeating-linear-gradient(to bottom, #ffffff42 0 1px, transparent 1px 4px),
+    linear-gradient(#f1f3f7, #dce2e9);
+  border-color: var(--card-line);
+}
+[data-theme="aqua"] :is(.date-navigation, .verse-audio-speed, .theme-setting select) {
+  background: var(--aqua-silver);
+  box-shadow: var(--aqua-rim);
+}
+[data-theme="aqua"] :is(.btn, .font-size-btn, .verse-audio-btn, .leaderboard-refresh) {
+  background: var(--aqua-silver);
+  border: 1px solid #94a0af;
+  border-radius: 999px;
+  color: #192a40;
+  text-shadow: 0 1px 1px #ffffffa8;
+  box-shadow: var(--aqua-rim);
+}
+[data-theme="aqua"] :is(.btn-increase, .done-btn, .goal-fill, .verse-audio-btn) {
+  background: var(--aqua-blue);
+  border-color: #4a83b6;
+}
+[data-theme="aqua"] :is(.btn, .font-size-btn, .verse-audio-btn):active {
+  filter: brightness(.92);
+  box-shadow: inset 0 1px 3px #344d7055;
 }
 :root[data-theme="midnight"] {
   color-scheme: dark;
@@ -1147,7 +1174,7 @@ body {
   --red: #814853; --red-deep: #693741; --blue: #495d93; --blue-deep: #384977;
   --green: #386b70; --green-deep: #2e585e; --share-bg: #c6b687;
 }
-:is([data-theme="paper"], [data-theme="forest"], [data-theme="aqua"], [data-theme="midnight"]) {
+:is([data-theme="paper"], [data-theme="forest"], [data-theme="midnight"]) {
   & :is(.date-navigation, .dock) { background: var(--card-bg); }
   & :is(.btn-share, .done-sync-btn) { background: var(--share-bg); color: #28251e; }
   & .btn { box-shadow: 0 2px 8px rgb(0 0 0 / 12%); }
