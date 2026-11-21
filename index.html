@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-theme="liquid-glass">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport"
@@ -8,12 +8,11 @@
   <script>
     try {
       const theme = localStorage.getItem('haggadah.theme')
-      if (theme === 'liquid-glass') {
-        document.documentElement.dataset.theme = theme
-      } else if (theme === 'modern') {
+      if (theme === 'original' || theme === 'modern') document.documentElement.dataset.theme = 'original'
+      if (theme === 'modern') {
         localStorage.setItem('haggadah.theme', 'original')
       }
-    } catch { /* Use the original theme when storage is unavailable. */ }
+    } catch { /* Keep the default theme when storage is unavailable. */ }
   </script>
   <meta name="description" content="매주 말씀을 읊조리며 횟수를 세는 하가다 페이지" />
   <title>새가나안교회 하가다</title>

@@ -53,7 +53,7 @@ const els = {
 }
 
 const themeSelect = $('theme-select')
-themeSelect.value = document.documentElement.dataset.theme || 'original'
+themeSelect.value = document.documentElement.dataset.theme
 themeSelect.addEventListener('change', () => {
   document.documentElement.dataset.theme = themeSelect.value
   document.querySelector('meta[name="theme-color"]').content =
